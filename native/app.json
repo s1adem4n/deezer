@@ -15,11 +15,13 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.jonathanbuko.deezer",
       "infoPlist": {
         "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
+      "bundleIdentifier": "com.jonathanbuko.deezer",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
