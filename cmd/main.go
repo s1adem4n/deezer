@@ -4,9 +4,12 @@ import (
 	"context"
 	"deezer/pkg/db"
 	"deezer/pkg/scanner"
+	"deezer/pkg/stream"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"runtime/pprof"
 	"strconv"
 
@@ -96,8 +99,41 @@ func main() {
 
 	api := e.Group("/api")
 	api.Static("/data", config.DataPath)
-	// use in production
-	// api.Use(CacheMiddleware())
+	api.GET("/tracks/:id/stream", func(c echo.Context) error {
+		id, err := ParseInt64(c.Param("id"))
+		if err != nil {
+			return err
+		}
+
+		track, err := queries.GetTrack(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		trackID := fmt.Sprintf("%d", track.ID)
+		streamPath := filepath.Join(config.DataPath, "streams", trackID)
+		if _, err := os.Stat(streamPath); err == nil {
+			// redirect to m3u8 at /data/streams/:id/stream.m3u8
+			return c.Redirect(302, "/api/data/streams/"+trackID+"/stream.m3u8")
+		}
+
+		file, err := os.Open(track.Path)
+		if err != nil {
+			return err
+		}
+
+		stream := stream.Stream{
+			Bitrate:    int(track.Bitrate),
+			OutputPath: streamPath,
+			Data:       file,
+		}
+		err = stream.Convert()
+		if err != nil {
+			return err
+		}
+
+		return c.Redirect(302, "/api/data/streams/"+trackID+"/stream.m3u8")
+	})
 
 	api.GET("/albums", func(c echo.Context) error {
 		albums, err := queries.GetAlbums(ctx)
