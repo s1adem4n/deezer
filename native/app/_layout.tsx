@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AudioPlayer } from "$lib/audioplayer";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as SystemUI from "expo-system-ui";
 
 TrackPlayer.registerPlaybackService(() => playbackService);
 const queryClient = new QueryClient();
@@ -36,11 +37,20 @@ export default function Layout() {
     });
   });
 
+  SystemUI.setBackgroundColorAsync("black");
+
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView className="flex-1">
       <QueryClientProvider client={queryClient}>
-        <StatusBar style="auto" />
-        <Stack></Stack>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: "black",
+            },
+            headerTintColor: "rgb(229 231 235)",
+          }}
+        ></Stack>
         {loaded ? <AudioPlayer /> : null}
       </QueryClientProvider>
     </GestureHandlerRootView>

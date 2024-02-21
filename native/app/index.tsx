@@ -18,6 +18,7 @@ const AlbumPreview = React.memo(
 
     return (
       <View
+        className="bg-black"
         style={{
           width: windowWidth / 2,
           padding: 8,
