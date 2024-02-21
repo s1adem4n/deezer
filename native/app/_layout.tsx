@@ -45,9 +45,8 @@ export default function Layout() {
         <StatusBar style="light" />
         <Stack
           screenOptions={{
-            headerStyle: {
-              backgroundColor: "black",
-            },
+            headerTransparent: true,
+            headerBlurEffect: "dark",
             headerTintColor: "rgb(229 231 235)",
           }}
         ></Stack>

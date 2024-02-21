@@ -1,16 +1,17 @@
 import { Dimensions, FlatList, Image, Text, View } from "react-native";
-import { Album, Artist, BASE_URL, api } from "$lib/api";
-import { useEffect, useState } from "react";
+import { Album, BASE_URL, api } from "$lib/api";
+import { useState } from "react";
 import { Link, Stack } from "expo-router";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 const windowWidth = Dimensions.get("window").width;
 
 const AlbumPreview = React.memo(
   ({ album, index }: { album: Album; index: number }) => {
     const artists = useQuery({
-      queryKey: ["artists", album.id],
+      queryKey: ["album", album.id, "artists"],
       queryFn: async () => {
         return await api.albums.artists(album.id);
       },
@@ -18,7 +19,6 @@ const AlbumPreview = React.memo(
 
     return (
       <View
-        className="bg-black"
         style={{
           width: windowWidth / 2,
           padding: 8,
@@ -29,7 +29,7 @@ const AlbumPreview = React.memo(
       >
         <Link href={`/albums/${album.id}`}>
           <View
-            className="rounded-md shadow-sm bg-gray-100"
+            className="rounded-md bg-zinc-800"
             style={{
               width: "100%",
               height: undefined,
@@ -40,6 +40,8 @@ const AlbumPreview = React.memo(
               source={{ uri: `${BASE_URL}/${album.coverPath}` }}
               className="rounded-md"
               style={{
+                borderColor: "rgba(255, 255, 255, 0.2)",
+                borderWidth: 0.5,
                 width: "100%",
                 height: undefined,
                 aspectRatio: 1,
@@ -49,13 +51,13 @@ const AlbumPreview = React.memo(
         </Link>
 
         <Text
-          className="font-semibold mt-0.5"
+          className="font-semibold mt-0.5 text-zinc-200"
           numberOfLines={1}
           ellipsizeMode="tail"
         >
           {album.title}
         </Text>
-        <Text className="text-gray-400" numberOfLines={1} ellipsizeMode="tail">
+        <Text className="text-zinc-500" numberOfLines={1} ellipsizeMode="tail">
           {artists.data?.map((artist) => artist.name).join(", ")}
         </Text>
       </View>
@@ -75,9 +77,10 @@ export default function Page() {
     },
   });
   const [refreshing, setRefreshing] = useState(false);
+  const headerHeight = useHeaderHeight();
 
   return (
-    <View className="flex-1 bg-white text-gray-800">
+    <View className="flex-1 bg-black text-zinc-200">
       <Stack.Screen
         options={{
           title: "Albums",
@@ -89,6 +92,7 @@ export default function Page() {
         renderItem={({ item, index }) => (
           <AlbumPreview album={item} index={index} />
         )}
+        contentInset={{ top: headerHeight }}
         keyExtractor={(item) => item.id.toString()}
         refreshing={refreshing}
         onRefresh={albums.refetch}

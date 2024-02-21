@@ -22,7 +22,7 @@ import TrackPlayer, {
   Progress,
   PlaybackState,
 } from "react-native-track-player";
-import Fa from "@expo/vector-icons/FontAwesome5";
+import Fa from "@expo/vector-icons/FontAwesome6";
 import BottomSheet from "@gorhom/bottom-sheet";
 import {
   Directions,
@@ -54,12 +54,18 @@ const FullScreenPlayer: React.FC<{
   return (
     <BottomSheet
       onClose={onClose}
-      topInset={safeArea.top}
       enablePanDownToClose
       snapPoints={["100%"]}
-      backgroundComponent={(props) => (
-        <View {...props} className="bg-white shadow-sm" />
+      handleComponent={(props) => (
+        <View
+          {...props}
+          className="w-12 h-1 bg-zinc-700 rounded-md my-2 mx-auto"
+          style={{
+            marginTop: safeArea.top,
+          }}
+        />
       )}
+      backgroundComponent={(props) => <View {...props} className="bg-black" />}
     >
       <View
         className="flex-1 flex flex-col items-center px-4"
@@ -68,7 +74,7 @@ const FullScreenPlayer: React.FC<{
         }}
       >
         <View
-          className="w-48 h-48 bg-gray-200 rounded-md shadow-sm"
+          className="w-48 h-48 bg-zinc-800 rounded-md shadow-sm"
           style={{
             width: windowWidth - 32,
             height: windowWidth - 32,
@@ -80,6 +86,8 @@ const FullScreenPlayer: React.FC<{
             }}
             className="rounded-md"
             style={{
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              borderWidth: 0.5,
               width: windowWidth - 32,
               height: windowWidth - 32,
             }}
@@ -93,7 +101,7 @@ const FullScreenPlayer: React.FC<{
           }}
         >
           <Text
-            className="text-gray-500 font-semibold"
+            className="text-zinc-500 font-semibold"
             numberOfLines={1}
             style={{
               fontVariant: ["tabular-nums"],
@@ -111,13 +119,13 @@ const FullScreenPlayer: React.FC<{
             }}
           >
             <View
-              className="h-4 bg-gray-100 rounded-md shadow-sm"
+              className="h-4 bg-zinc-800 rounded-md shadow-sm"
               style={{
                 width: windowWidth - 125,
               }}
             >
               <View
-                className="h-4 bg-gray-700 rounded-md"
+                className="h-4 bg-zinc-200 rounded-md"
                 style={{
                   width: Math.max(
                     mustNumber(
@@ -131,7 +139,7 @@ const FullScreenPlayer: React.FC<{
             </View>
           </View>
           <Text
-            className="text-gray-500 font-semibold"
+            className="text-zinc-500 font-semibold"
             numberOfLines={1}
             style={{
               fontVariant: ["tabular-nums"],
@@ -140,14 +148,17 @@ const FullScreenPlayer: React.FC<{
             {parseLength(progress.duration)}
           </Text>
         </View>
-        <Text className="font-semibold mt-4 text-2xl text-center">
+        <Text
+          className="font-semibold mt-4 text-lg text-zinc-200"
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
           {track ? track.title : ""}
         </Text>
         <Text
-          className="text-gray-500 text-center mt-1"
-          style={{
-            fontSize: 18,
-          }}
+          className="text-zinc-500 text-center text-lg"
+          numberOfLines={1}
+          ellipsizeMode="tail"
         >
           {track ? track.artist : ""}
         </Text>
@@ -158,10 +169,10 @@ const FullScreenPlayer: React.FC<{
               TrackPlayer.skipToPrevious();
             }}
           >
-            <Fa name="step-backward" size={48} color="rgb(17 24 39)" />
+            <Fa name="backward-step" size={48} color="rgb(228 228 231)" />
           </TouchableOpacity>
           <TouchableOpacity
-            className="h-24 w-24 flex flex-row items-center justify-center bg-gray-100 shadow-sm rounded-full mx-4"
+            className="h-24 w-24 flex flex-row items-center justify-center shadow-sm rounded-full mx-4"
             onPress={() => {
               if (playbackState.state === State.Playing) {
                 TrackPlayer.pause();
@@ -171,7 +182,7 @@ const FullScreenPlayer: React.FC<{
             }}
           >
             {playbackState.state === State.Playing ? (
-              <Fa name="pause" size={60} color="rgb(17 24 39)" />
+              <Fa name="pause" size={60} color="rgb(228 228 231)" />
             ) : (
               <Fa
                 name="play"
@@ -179,7 +190,7 @@ const FullScreenPlayer: React.FC<{
                   marginLeft: 8,
                 }}
                 size={60}
-                color="rgb(17 24 39)"
+                color="rgb(228 228 231)"
               />
             )}
           </TouchableOpacity>
@@ -189,7 +200,7 @@ const FullScreenPlayer: React.FC<{
               TrackPlayer.skipToNext();
             }}
           >
-            <Fa name="step-forward" size={48} color="rgb(17 24 39)" />
+            <Fa name="forward-step" size={48} color="rgb(228 228 231)" />
           </TouchableOpacity>
         </View>
       </View>
@@ -234,19 +245,23 @@ export const AudioPlayer: React.FC = () => {
     <>
       <GestureDetector gesture={gestures}>
         <View
-          className="flex flex-col shadow border-t border-gray-200 bg-white"
+          className="flex flex-col border-t border-zinc-900 bg-black"
           style={{
             paddingBottom: safeArea.bottom,
           }}
         >
           <View className="p-2 flex flex-row items-center">
-            <View className="w-12 h-12 rounded-md bg-gray-200 shadow-sm">
+            <View className="w-12 h-12 rounded-md bg-zinc-800 shadow-sm">
               {track ? (
                 <Image
                   source={{
                     uri: track.artwork,
                   }}
                   className="w-12 h-12 rounded-md"
+                  style={{
+                    borderColor: "rgba(255, 255, 255, 0.2)",
+                    borderWidth: 0.5,
+                  }}
                 />
               ) : null}
             </View>
@@ -259,7 +274,7 @@ export const AudioPlayer: React.FC = () => {
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                className="font-semibold"
+                className="font-semibold text-zinc-200"
               >
                 {track ? track.title : ""}
               </Text>
@@ -267,7 +282,7 @@ export const AudioPlayer: React.FC = () => {
               <Text
                 numberOfLines={1}
                 ellipsizeMode="tail"
-                className="text-gray-500"
+                className="text-zinc-500"
               >
                 {track ? track.artist : ""}
               </Text>
@@ -284,14 +299,14 @@ export const AudioPlayer: React.FC = () => {
               }}
             >
               {playbackState.state === State.Playing ? (
-                <Fa name="pause" size={24} color="rgb(17 24 39)" />
+                <Fa name="pause" size={24} color="rgb(228 228 231)" />
               ) : (
-                <Fa name="play" size={24} color="rgb(17 24 39)" />
+                <Fa name="play" size={24} color="rgb(228 228 231)" />
               )}
             </TouchableOpacity>
           </View>
           <View className="flex flex-row justify-between items-center px-2">
-            <Text className="text-gray-500 text-xs" numberOfLines={1}>
+            <Text className="text-zinc-500 text-xs" numberOfLines={1}>
               {parseLength(progress.position)}
             </Text>
             <View
@@ -304,13 +319,13 @@ export const AudioPlayer: React.FC = () => {
               }}
             >
               <View
-                className="h-1 bg-gray-100 rounded-md"
+                className="h-1 bg-zinc-800 rounded-md"
                 style={{
                   width: windowWidth - 100,
                 }}
               >
                 <View
-                  className="h-1 bg-gray-700 rounded-md"
+                  className="h-1 bg-zinc-200 rounded-md"
                   style={{
                     width: mustNumber(
                       (progress.position / progress.duration) *
@@ -320,7 +335,7 @@ export const AudioPlayer: React.FC = () => {
                 />
               </View>
             </View>
-            <Text className="text-gray-500 text-xs" numberOfLines={1}>
+            <Text className="text-zinc-500 text-xs" numberOfLines={1}>
               {parseLength(progress.duration)}
             </Text>
           </View>

@@ -8,16 +8,18 @@ import { parseLength } from "$lib/utils";
 import React from "react";
 import TrackPlayer, { Track as PlayerTrack } from "react-native-track-player";
 import { useQuery } from "@tanstack/react-query";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 const windowWidth = Dimensions.get("window").width;
 
 const Track = React.memo(
   ({ track, onPlay }: { track: ApiTrack; onPlay?: () => void }) => {
     return (
-      <View className="flex flex-row justify-between border-b border-gray-200 p-4">
+      <View className="flex flex-row justify-between border-b border-zinc-900 p-4">
         <View className="flex flex-row gap-4">
           {track.position ? (
             <Text
+              className="text-zinc-500"
               style={{
                 fontVariant: ["tabular-nums"],
               }}
@@ -27,6 +29,7 @@ const Track = React.memo(
           ) : null}
 
           <Text
+            className="text-zinc-200"
             onPress={onPlay}
             style={{
               width: windowWidth - 125,
@@ -38,6 +41,7 @@ const Track = React.memo(
           </Text>
         </View>
         <Text
+          className="text-zinc-500"
           style={{
             fontVariant: ["tabular-nums"],
           }}
@@ -97,6 +101,7 @@ export default function Page() {
     enabled: tracks.data ? true : false,
   });
   const [refreshing, setRefreshing] = useState(false);
+  const headerHeight = useHeaderHeight();
 
   const getPlayerTracks = () => {
     if (!album.data || !tracks.data || !trackArtists.data) return;
@@ -112,7 +117,7 @@ export default function Page() {
   };
 
   return (
-    <View className="bg-white flex-1">
+    <View className="flex-1 bg-black">
       <Stack.Screen options={{ title: album.data?.title || "Album" }} />
       <FlatList
         refreshing={refreshing}
@@ -123,6 +128,7 @@ export default function Page() {
           await trackArtists.refetch();
           setRefreshing(false);
         }}
+        contentInset={{ top: headerHeight }}
         initialNumToRender={12}
         data={tracks.data}
         renderItem={({ item, index }) => (
@@ -144,7 +150,7 @@ export default function Page() {
         )}
         keyExtractor={(item) => item.id.toString()}
         ListFooterComponent={
-          <Text className="p-2 text-gray-500 text-sm">
+          <Text className="p-2 text-zinc-500 text-sm">
             {tracks.data?.length} tracks,{" "}
             {tracks.data
               ? formatDuration(
