@@ -1,7 +1,5 @@
 package diffs
 
-import "fmt"
-
 func (d *Diffs) DeleteArtist(artist *Artist) {
 	_, foundIn := d.Artist.Find(artist.Name)
 	if foundIn != -1 {
@@ -38,7 +36,6 @@ func (d *Diffs) DeleteArtist(artist *Artist) {
 func (d *Diffs) DeleteTrack(track *Track) {
 	_, foundIn := d.Track.Find(track.Title, track.AlbumID)
 	if foundIn != -1 {
-		fmt.Println("found in create or update")
 		return
 	}
 	d.Track.Delete = append(d.Track.Delete, *track)

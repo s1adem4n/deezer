@@ -98,7 +98,7 @@ func (s *Scanner) Watch() {
 					continue
 				}
 
-				if err := os.Remove(track.Path); err != nil {
+				if err := os.Remove(track.AudioPath); err != nil {
 					slog.Error(
 						"error removing track file",
 						"err", err,

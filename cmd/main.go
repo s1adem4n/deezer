@@ -109,6 +109,8 @@ func main() {
 		if err != nil {
 			return err
 		}
+		format := filepath.Ext(track.Path)
+		format = format[1:]
 
 		trackID := fmt.Sprintf("%d", track.ID)
 		streamPath := filepath.Join(config.DataPath, "streams", trackID)
@@ -126,6 +128,7 @@ func main() {
 			Bitrate:    int(track.Bitrate),
 			OutputPath: streamPath,
 			Data:       file,
+			Format:     format,
 		}
 		err = stream.Convert()
 		if err != nil {

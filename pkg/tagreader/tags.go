@@ -137,16 +137,14 @@ func (t *TagReader) ReadPaths(paths []string) []*Track {
 		}(path)
 	}
 
-	var tracks []*Track
-	go func() {
-		for track := range results {
-			tracks = append(tracks, track)
-		}
-	}()
-
 	wg.Wait()
 	close(sem)
 	close(results)
+
+	var tracks []*Track
+	for result := range results {
+		tracks = append(tracks, result)
+	}
 
 	return tracks
 }

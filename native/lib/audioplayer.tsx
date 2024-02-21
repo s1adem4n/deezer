@@ -1,228 +1,401 @@
-import React, {
-  createContext,
-  useState,
-  useContext,
-  useEffect,
-  useRef,
-} from "react";
-import { AVPlaybackStatus, AVPlaybackStatusSuccess, Audio } from "expo-av";
-import { Artist, BASE_URL, Track, api } from "./api";
+import React, { useEffect, useRef, useState } from "react";
+
 import {
   View,
   Text,
   Image,
   Dimensions,
-  Animated,
-  StyleSheet,
   ScrollView,
+  TouchableOpacity,
+  Animated,
+  Easing,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { parseLength } from "./utils";
-
-const PlayerContext = createContext<{
-  sound: Audio.Sound | null;
-  track: Track | null;
-  playing: boolean;
-  play: (track: Track) => Promise<void>;
-  pause: () => Promise<void>;
-  stop: () => Promise<void>;
-  resume: () => Promise<void>;
-} | null>(null);
-
-export const PlayerProvider: React.FC<{
-  children?: React.ReactNode;
-}> = ({ children }) => {
-  const [track, setTrack] = useState<Track | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-
-  useEffect(() => {
-    Audio.setAudioModeAsync({
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-    });
-  }, []);
-
-  const play = async (track: Track) => {
-    const { sound } = await Audio.Sound.createAsync({
-      uri: `${BASE_URL}/${track.audioPath}`,
-    });
-
-    setSound(sound);
-    setTrack(track);
-    setPlaying(true);
-
-    await sound.playAsync();
-  };
-
-  const pause = async () => {
-    if (sound && playing) {
-      setPlaying(false);
-      await sound.pauseAsync();
-    }
-  };
-
-  const stop = async () => {
-    if (sound) {
-      setPlaying(false);
-      await sound.stopAsync();
-    }
-  };
-
-  const resume = async () => {
-    if (sound && !playing) {
-      setPlaying(true);
-      await sound.playAsync();
-    }
-  };
-
-  return (
-    <PlayerContext.Provider
-      value={{ sound, track, playing, play, pause, stop, resume }}
-    >
-      {children}
-    </PlayerContext.Provider>
-  );
-};
-
-export const usePlayer = () => {
-  const context = useContext(PlayerContext);
-  if (!context) {
-    throw new Error("usePlayer must be used within a PlayerProvider");
-  }
-  return context;
-};
+import TrackPlayer, {
+  useProgress,
+  Track,
+  Event,
+  useTrackPlayerEvents,
+  State,
+  usePlaybackState,
+  Progress,
+  PlaybackState,
+} from "react-native-track-player";
+import Fa from "@expo/vector-icons/FontAwesome5";
 
 const windowWidth = Dimensions.get("window").width;
+const windowHeight = Dimensions.get("window").height;
 
-export const AudioPlayer: React.FC = () => {
-  const player = usePlayer();
+const mustNumber = (value: number | null | undefined): number => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return 0;
+  }
+  return value;
+};
+
+const FullScreenPlayer: React.FC<{
+  progress: Progress;
+  playbackState:
+    | PlaybackState
+    | {
+        state: undefined;
+      };
+  track: Track | null;
+  open: boolean;
+  onClose?: () => void;
+}> = ({ progress, playbackState, track, onClose, open }) => {
+  const postition = useRef(new Animated.Value(0)).current;
   const safeArea = useSafeAreaInsets();
-  const [artists, setArtists] = useState<Artist[]>([]);
-  const [status, setStatus] = useState<AVPlaybackStatusSuccess | null>(null);
+  const touchStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      if (player.sound) {
-        setStatus(
-          (await player.sound.getStatusAsync()) as AVPlaybackStatusSuccess
-        );
-      }
-    }, 200);
-
-    return () => clearInterval(interval);
-  }, [player.sound]);
-
-  useEffect(() => {
-    if (!status) return;
-    if (!status.isPlaying) {
-      player.pause();
+    if (open) {
+      Animated.timing(postition, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.cubic),
+      }).start();
     }
-  }, [status]);
-
-  useEffect(() => {
-    if (!player.track) return;
-    api.tracks.artists(player.track.id).then(setArtists);
-  }, [player.track]);
+  }, [open]);
 
   return (
-    <View
-      className="flex flex-col shadow border-t border-gray-200 bg-white"
+    <Animated.View
+      className="absolute bg-white bg-opacity-50"
       style={{
+        top: 0,
+        left: 0,
+        width: windowWidth,
+        height: windowHeight,
+        paddingTop: safeArea.top,
         paddingBottom: safeArea.bottom,
+        zIndex: 100,
+        transform: [
+          {
+            translateY: postition.interpolate({
+              inputRange: [0, 1],
+              outputRange: [windowHeight, 0],
+            }),
+          },
+        ],
+      }}
+      onStartShouldSetResponder={() => true}
+      onResponderStart={(e) => {
+        touchStart.current = {
+          x: e.nativeEvent.locationX,
+          y: e.nativeEvent.locationY,
+        };
+      }}
+      onResponderEnd={(e) => {
+        const now = {
+          x: e.nativeEvent.locationX,
+          y: e.nativeEvent.locationY,
+        };
+        const dy = now.y - touchStart.current.y;
+        if (dy > 100) {
+          Animated.timing(postition, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.cubic),
+          }).start();
+          setTimeout(() => {
+            onClose?.();
+          }, 300);
+        }
       }}
     >
-      <View className="p-2 flex flex-row items-center">
-        <View className="w-12 h-12 rounded-md bg-gray-200 shadow-sm">
-          {player.track ? (
-            <Image
-              source={{
-                uri: `${BASE_URL}/${player.track.coverPath}`,
-              }}
-              className="w-12 h-12 rounded-md"
-            />
-          ) : null}
-        </View>
+      <View className="flex-1 flex flex-col items-center px-4 py-2">
         <View
-          className="flex flex-col ml-2 h-9"
+          className="w-48 h-48 bg-gray-200 rounded-md shadow-sm"
           style={{
-            width: windowWidth - 150,
+            width: windowWidth - 32,
+            height: windowWidth - 32,
           }}
         >
-          <ScrollView
-            showsHorizontalScrollIndicator={false}
-            bounces={false}
-            horizontal
-            className="h-2"
-          >
-            <Text className="font-semibold">
-              {player.track ? player.track.title : ""}
-            </Text>
-          </ScrollView>
-          <ScrollView
-            showsHorizontalScrollIndicator={false}
-            bounces={false}
-            horizontal
-            className="h-2"
-          >
-            <Text className="text-gray-500">
-              {artists.map((artist) => artist.name).join(", ")}
-            </Text>
-          </ScrollView>
-        </View>
-        <Text
-          className="text-gray-500 ml-auto"
-          onPress={async () => {
-            if (player.playing) {
-              await player.pause();
-            } else if (player.sound) {
-              await player.resume();
-            }
-          }}
-        >
-          {player.playing ? "Pause" : "Play"}
-        </Text>
-      </View>
-      <View className="flex flex-row justify-between items-center px-2">
-        <Text className="text-gray-500 text-xs" numberOfLines={1}>
-          {status ? parseLength(status.positionMillis / 1000) : "00:00"}
-        </Text>
-        <View
-          className="h-4 flex flex-row items-center"
-          onStartShouldSetResponder={() => true}
-          onResponderRelease={(event) => {
-            const xPosition = event.nativeEvent.locationX;
-            const progress = xPosition / (windowWidth - 100);
-
-            if (player.sound && player.track) {
-              player.sound.setPositionAsync(
-                progress * player.track.length * 1000
-              );
-            }
-          }}
-        >
-          <View
-            className="h-1 bg-gray-200 rounded-md"
+          <Image
+            source={{
+              uri: track?.artwork,
+            }}
+            className="rounded-md"
             style={{
-              width: windowWidth - 100,
+              width: windowWidth - 32,
+              height: windowWidth - 32,
+            }}
+          />
+        </View>
+
+        <View
+          className="flex flex-row justify-between items-center mt-4"
+          style={{
+            width: windowWidth - 32,
+          }}
+        >
+          <Text
+            className="text-gray-500 font-semibold"
+            numberOfLines={1}
+            style={{
+              fontVariant: ["tabular-nums"],
+            }}
+          >
+            {parseLength(progress.position)}
+          </Text>
+          <View
+            className="h-4 flex flex-row items-center"
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={(event) => {
+              const xPosition = event.nativeEvent.locationX;
+              const percent = xPosition / (windowWidth - 125);
+              TrackPlayer.seekTo(percent * progress.duration);
             }}
           >
             <View
-              className="h-1 bg-gray-700 rounded-md"
+              className="h-4 bg-gray-100 rounded-md shadow-sm"
               style={{
-                width:
-                  status && player.track
-                    ? (status.positionMillis / 1000 / player.track.length) *
-                      (windowWidth - 100)
-                    : 0,
+                width: windowWidth - 125,
               }}
-            />
+            >
+              <View
+                className="h-4 bg-gray-700 rounded-md"
+                style={{
+                  width: Math.max(
+                    mustNumber(
+                      (progress.position / progress.duration) *
+                        (windowWidth - 125)
+                    ),
+                    2
+                  ),
+                }}
+              />
+            </View>
           </View>
+          <Text
+            className="text-gray-500 font-semibold"
+            numberOfLines={1}
+            style={{
+              fontVariant: ["tabular-nums"],
+            }}
+          >
+            {parseLength(progress.duration)}
+          </Text>
         </View>
-        <Text className="text-gray-500 text-xs" numberOfLines={1}>
-          {player.track ? parseLength(player.track.length) : "00:00"}
+        <Text className="font-semibold mt-4 text-2xl text-center">
+          {track ? track.title : ""}
         </Text>
+        <Text
+          className="text-gray-500 text-center mt-1"
+          style={{
+            fontSize: 18,
+          }}
+        >
+          {track ? track.artist : ""}
+        </Text>
+        <View className="flex flex-row justify-center items-center mt-auto mb-8">
+          <TouchableOpacity
+            className="h-16 w-16 flex flex-row items-center justify-center"
+            onPress={() => {
+              TrackPlayer.skipToPrevious();
+            }}
+          >
+            <Fa name="step-backward" size={48} color="rgb(17 24 39)" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="h-24 w-24 flex flex-row items-center justify-center bg-gray-100 shadow-sm rounded-full mx-4"
+            onPress={() => {
+              if (playbackState.state === State.Playing) {
+                TrackPlayer.pause();
+              } else {
+                TrackPlayer.play();
+              }
+            }}
+          >
+            {playbackState.state === State.Playing ? (
+              <Fa name="pause" size={60} color="rgb(17 24 39)" />
+            ) : (
+              <Fa
+                name="play"
+                style={{
+                  marginLeft: 8,
+                }}
+                size={60}
+                color="rgb(17 24 39)"
+              />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="h-20 w-20 flex flex-row items-center justify-center"
+            onPress={() => {
+              TrackPlayer.skipToNext();
+            }}
+          >
+            <Fa name="step-forward" size={48} color="rgb(17 24 39)" />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </Animated.View>
+  );
+};
+
+export const AudioPlayer: React.FC = () => {
+  const safeArea = useSafeAreaInsets();
+  const progress = useProgress(250);
+  const playbackState = usePlaybackState();
+  const [track, setTrack] = useState<Track | null>(null);
+  const [fullScreen, setFullScreen] = useState(false);
+  const opacity = new Animated.Value(0);
+
+  useEffect(() => {
+    if (!fullScreen) {
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [fullScreen]);
+
+  const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
+
+  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], (event) => {
+    if (event.track) {
+      setTrack(event.track);
+    }
+  });
+
+  return (
+    <>
+      {fullScreen ? (
+        <FullScreenPlayer
+          progress={progress}
+          playbackState={playbackState}
+          track={track}
+          open={fullScreen}
+          onClose={() => setFullScreen(false)}
+        />
+      ) : null}
+      <Animated.View
+        className="flex flex-col shadow border-t border-gray-200 bg-white"
+        style={{
+          paddingBottom: safeArea.bottom,
+        }}
+        onStartShouldSetResponder={() => true}
+        onResponderStart={(e) => {
+          setTouchStart({
+            x: e.nativeEvent.locationX,
+            y: e.nativeEvent.locationY,
+          });
+        }}
+        onResponderEnd={(e) => {
+          const now = {
+            x: e.nativeEvent.locationX,
+            y: e.nativeEvent.locationY,
+          };
+          const dx = now.x - touchStart.x;
+          const dy = now.y - touchStart.y;
+          if (dx > 100) {
+            TrackPlayer.skipToPrevious();
+          } else if (dx < -100) {
+            TrackPlayer.skipToNext();
+          }
+          if (dy < -100) {
+            console.log("swipe up");
+            setFullScreen(true);
+          }
+        }}
+      >
+        <View className="p-2 flex flex-row items-center">
+          <View className="w-12 h-12 rounded-md bg-gray-200 shadow-sm">
+            {track ? (
+              <Image
+                source={{
+                  uri: track.artwork,
+                }}
+                className="w-12 h-12 rounded-md"
+              />
+            ) : null}
+          </View>
+          <View
+            className="flex flex-col ml-2 h-9"
+            style={{
+              width: windowWidth - 120,
+            }}
+          >
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              className="font-semibold"
+            >
+              {track ? track.title : ""}
+            </Text>
+
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              className="text-gray-500"
+            >
+              {track ? track.artist : ""}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            className="ml-auto mr-2"
+            onPress={() => {
+              if (playbackState.state === State.Playing) {
+                TrackPlayer.pause();
+              } else {
+                TrackPlayer.play();
+              }
+            }}
+          >
+            {playbackState.state === State.Playing ? (
+              <Fa name="pause" size={24} color="rgb(17 24 39)" />
+            ) : (
+              <Fa name="play" size={24} color="rgb(17 24 39)" />
+            )}
+          </TouchableOpacity>
+        </View>
+        <View className="flex flex-row justify-between items-center px-2">
+          <Text className="text-gray-500 text-xs" numberOfLines={1}>
+            {parseLength(progress.position)}
+          </Text>
+          <View
+            className="h-4 flex flex-row items-center"
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={(event) => {
+              const xPosition = event.nativeEvent.locationX;
+              const percent = xPosition / (windowWidth - 100);
+              TrackPlayer.seekTo(percent * progress.duration);
+            }}
+          >
+            <View
+              className="h-1 bg-gray-100 rounded-md"
+              style={{
+                width: windowWidth - 100,
+              }}
+            >
+              <View
+                className="h-1 bg-gray-700 rounded-md"
+                style={{
+                  width: mustNumber(
+                    (progress.position / progress.duration) *
+                      (windowWidth - 100)
+                  ),
+                }}
+              />
+            </View>
+          </View>
+          <Text className="text-gray-500 text-xs" numberOfLines={1}>
+            {parseLength(progress.duration)}
+          </Text>
+        </View>
+      </Animated.View>
+    </>
   );
 };

@@ -1,56 +1,53 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 
-import { Dimensions, FlatList, RefreshControl, Text, View } from "react-native";
-import { Album, Track as ITrack, api } from "$lib/api";
-import { usePlayer } from "$lib/audioplayer";
-import { parseLength, parseLengthHours } from "$lib/utils";
+import { Dimensions, FlatList, Text, View } from "react-native";
+import { Album, Artist, Track as ApiTrack, api } from "$lib/api";
+import { apiTrackToPlayerTrack } from "$lib/api/utils";
+import { parseLength } from "$lib/utils";
 import React from "react";
+import TrackPlayer, { Track as PlayerTrack } from "react-native-track-player";
+import { useQuery } from "@tanstack/react-query";
 
 const windowWidth = Dimensions.get("window").width;
 
-const Track = React.memo(({ track }: { track: ITrack }) => {
-  const player = usePlayer();
+const Track = React.memo(
+  ({ track, onPlay }: { track: ApiTrack; onPlay?: () => void }) => {
+    return (
+      <View className="flex flex-row justify-between border-b border-gray-200 p-4">
+        <View className="flex flex-row gap-4">
+          {track.position ? (
+            <Text
+              style={{
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {track.position.toString().padStart(2, "0")}
+            </Text>
+          ) : null}
 
-  return (
-    <View className="flex flex-row justify-between border-b border-gray-200 p-4">
-      <View className="flex flex-row gap-4">
-        {track.position ? (
           <Text
+            onPress={onPlay}
             style={{
-              fontVariant: ["tabular-nums"],
+              width: windowWidth - 125,
             }}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
-            {track.position.toString().padStart(2, "0")}
+            {track.title}
           </Text>
-        ) : null}
-
+        </View>
         <Text
-          onPress={async () => {
-            if (player.playing) {
-              await player.pause();
-            }
-            await player.play(track);
-          }}
           style={{
-            width: windowWidth - 125,
+            fontVariant: ["tabular-nums"],
           }}
-          numberOfLines={1}
-          ellipsizeMode="tail"
         >
-          {track.title}
+          {parseLength(track.length)}
         </Text>
       </View>
-      <Text
-        style={{
-          fontVariant: ["tabular-nums"],
-        }}
-      >
-        {parseLength(track.length)}
-      </Text>
-    </View>
-  );
-});
+    );
+  }
+);
 
 function formatDuration(seconds: number) {
   const minutes = Math.floor(seconds / 60);
@@ -66,46 +63,96 @@ function formatDuration(seconds: number) {
 
 export default function Page() {
   const { id } = useLocalSearchParams();
-  const [album, setAlbum] = useState<Album | null>(null);
-  const [tracks, setTracks] = useState<ITrack[]>([]);
+  const album = useQuery({
+    queryKey: ["albums", id],
+    queryFn: async () => {
+      if (typeof id === "string") {
+        const parsedId = parseInt(id);
+        const albums = await api.albums.get(parsedId);
+        return albums;
+      }
+    },
+  });
+  const tracks = useQuery({
+    queryKey: ["albums", id, "tracks"],
+    queryFn: async () => {
+      if (typeof id === "string") {
+        const parsedId = parseInt(id);
+        const tracks = await api.albums.tracks(parsedId);
+        getPlayerTracks();
+        return tracks;
+      }
+    },
+  });
+  const trackArtists = useQuery({
+    queryKey: ["albums", id, "tracks", "artists"],
+    queryFn: async () => {
+      const res: Artist[][] = [];
+      for (const track of tracks.data || []) {
+        const artists = await api.tracks.artists(track.id);
+        res.push(artists);
+      }
+      return res;
+    },
+    enabled: tracks.data ? true : false,
+  });
   const [refreshing, setRefreshing] = useState(false);
 
-  const refresh = async () => {
-    setRefreshing(true);
-    if (typeof id === "string") {
-      const parsedId = parseInt(id);
-      setAlbum(await api.albums.get(parsedId));
-      setTracks((await api.albums.tracks(parsedId)) || []);
-    }
-    setRefreshing(false);
-  };
+  const getPlayerTracks = () => {
+    if (!album.data || !tracks.data || !trackArtists.data) return;
 
-  useEffect(() => {
-    if (typeof id === "string") {
-      const parsedId = parseInt(id);
-      api.albums.get(parsedId).then(setAlbum);
-      api.albums.tracks(parsedId).then((tracks) => {
-        setTracks(tracks || []);
-      });
+    const playerTracks: PlayerTrack[] = [];
+    for (let i = 0; i < tracks.data.length; i++) {
+      const track = tracks.data[i];
+      const artists = trackArtists.data[i];
+
+      playerTracks.push(apiTrackToPlayerTrack(track, artists, album.data));
     }
-  }, [id]);
+    return playerTracks;
+  };
 
   return (
     <View className="bg-white flex-1">
-      <Stack.Screen options={{ title: album?.title || "Album" }} />
+      <Stack.Screen options={{ title: album.data?.title || "Album" }} />
       <FlatList
         refreshing={refreshing}
-        onRefresh={refresh}
+        onRefresh={async () => {
+          setRefreshing(true);
+          await album.refetch();
+          await tracks.refetch();
+          await trackArtists.refetch();
+          setRefreshing(false);
+        }}
         initialNumToRender={12}
-        data={tracks}
-        renderItem={({ item }) => <Track track={item} />}
+        data={tracks.data}
+        renderItem={({ item, index }) => (
+          <Track
+            track={item}
+            onPlay={async () => {
+              while (!trackArtists.data) {
+                await new Promise((resolve) => setTimeout(resolve, 200));
+              }
+              const playerTracks = getPlayerTracks();
+              if (!playerTracks) return;
+
+              await TrackPlayer.reset();
+              await TrackPlayer.add(playerTracks);
+              await TrackPlayer.skip(index);
+              await TrackPlayer.play();
+            }}
+          />
+        )}
         keyExtractor={(item) => item.id.toString()}
         ListFooterComponent={
           <Text className="p-2 text-gray-500 text-sm">
-            {tracks?.length} tracks,{" "}
-            {formatDuration(
-              tracks.map((track) => track.length).reduce((a, b) => a + b, 0)
-            )}
+            {tracks.data?.length} tracks,{" "}
+            {tracks.data
+              ? formatDuration(
+                  tracks.data
+                    .map((track) => track.length)
+                    .reduce((a, b) => a + b, 0)
+                )
+              : "0 minutes"}
           </Text>
         }
       />

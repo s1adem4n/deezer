@@ -14,6 +14,7 @@ type Stream struct {
 	Bitrate    int
 	Data       io.Reader
 	OutputPath string
+	Format     string
 }
 
 // convert a input audio file to a HLS stream
@@ -22,9 +23,15 @@ func (s *Stream) Convert() error {
 		return err
 	}
 
+	// no need to convert if the format is already mp3 or m4a (aac)
+	format := "aac"
+	if s.Format == "mp3" || s.Format == "m4a" {
+		format = "copy"
+	}
+
 	args := []string{
 		"-i", "-",
-		"-c:a", "aac", "-vn",
+		"-c:a", format, "-vn",
 		"-b:a", fmt.Sprintf("%dk", s.Bitrate),
 		"-hls_time", "10", "-hls_list_size", "0",
 		"-hls_segment_filename", filepath.Join(s.OutputPath, "segment_%d.ts"),

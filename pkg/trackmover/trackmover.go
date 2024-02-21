@@ -132,16 +132,14 @@ func (f *TrackMover) MoveTracks(tracks []*tagreader.Track) []*Track {
 		}(track)
 	}
 
-	var movedTracks []*Track
-	go func() {
-		for track := range results {
-			movedTracks = append(movedTracks, track)
-		}
-	}()
-
 	wg.Wait()
 	close(results)
 	close(sem)
+
+	var movedTracks []*Track
+	for result := range results {
+		movedTracks = append(movedTracks, result)
+	}
 
 	return movedTracks
 }
