@@ -5,6 +5,7 @@ export interface Track {
   length: number;
   bitrate: number;
   albumId: number;
+  format: string;
   path: string;
   audioPath: string;
   coverPath: string;

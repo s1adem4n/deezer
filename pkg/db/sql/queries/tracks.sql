@@ -45,11 +45,12 @@ INSERT INTO tracks (
     length,
     bitrate,
     album_id,
+    format,
     path,
     audio_path,
     cover_path
   )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateTrack :exec
@@ -59,6 +60,7 @@ SET title = ?,
   length = ?,
   bitrate = ?,
   album_id = ?,
+  format = ?,
   path = ?,
   audio_path = ?,
   cover_path = ?

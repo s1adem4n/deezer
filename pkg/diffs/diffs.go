@@ -76,6 +76,7 @@ func (d *Diffs) AddTrack(track *trackmover.Track) {
 			Length:    int64(track.Length),
 			Bitrate:   int64(track.Bitrate),
 			Path:      track.Path,
+			Format:    track.Format,
 			AudioPath: track.AudioPath,
 			CoverPath: coverPath,
 			AlbumID:   int64(album.ID),

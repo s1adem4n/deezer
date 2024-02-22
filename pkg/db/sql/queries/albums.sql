@@ -25,6 +25,11 @@ FROM albums
 WHERE albums.title = ?
   AND artists.name IN (sqlc.slice ('artists'));
 
+-- name: GetAlbumByCoverPath :one
+SELECT *
+FROM albums
+WHERE cover_path = ?;
+
 -- name: GetAlbumTracks :many
 SELECT *
 FROM tracks

@@ -32,6 +32,7 @@ type Track struct {
 	Length    int64   `json:"length"`
 	Bitrate   int64   `json:"bitrate"`
 	AlbumID   int64   `json:"albumId"`
+	Format    string  `json:"format"`
 	Path      string  `json:"path"`
 	AudioPath string  `json:"audioPath"`
 	CoverPath *string `json:"coverPath"`

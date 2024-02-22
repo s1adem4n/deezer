@@ -1,20 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-import {
-  View,
-  Text,
-  Image,
-  Dimensions,
-  ScrollView,
-  TouchableOpacity,
-  Animated,
-  Easing,
-} from "react-native";
+import { View, Text, Image, Dimensions, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { parseLength } from "./utils";
 import TrackPlayer, {
   useProgress,
-  Track,
   Event,
   useTrackPlayerEvents,
   State,
@@ -22,6 +12,7 @@ import TrackPlayer, {
   Progress,
   PlaybackState,
 } from "react-native-track-player";
+import { PlayerTrack } from "./api/utils";
 import Fa from "@expo/vector-icons/FontAwesome6";
 import BottomSheet from "@gorhom/bottom-sheet";
 import {
@@ -29,9 +20,8 @@ import {
   Gesture,
   GestureDetector,
 } from "react-native-gesture-handler";
-
-const windowWidth = Dimensions.get("window").width;
-const windowHeight = Dimensions.get("window").height;
+import Slider from "@react-native-community/slider";
+import { VolumeManager } from "react-native-volume-manager";
 
 const mustNumber = (value: number | null | undefined): number => {
   if (value === null || value === undefined || isNaN(value)) {
@@ -47,10 +37,26 @@ const FullScreenPlayer: React.FC<{
     | {
         state: undefined;
       };
-  track: Track | null;
+  track: PlayerTrack | null;
   onClose?: () => void;
 }> = ({ progress, playbackState, track, onClose }) => {
   const safeArea = useSafeAreaInsets();
+  const [volume, setVolume] = useState(0);
+
+  useEffect(() => {
+    VolumeManager.showNativeVolumeUI({ enabled: false });
+    VolumeManager.getVolume().then((v) => {
+      setVolume(v.volume);
+    });
+    VolumeManager.addVolumeListener((v) => {
+      setVolume(v.volume);
+    });
+
+    return () => {
+      VolumeManager.showNativeVolumeUI({ enabled: true });
+    };
+  }, []);
+
   return (
     <BottomSheet
       onClose={onClose}
@@ -68,16 +74,18 @@ const FullScreenPlayer: React.FC<{
       backgroundComponent={(props) => <View {...props} className="bg-black" />}
     >
       <View
-        className="flex-1 flex flex-col items-center px-4"
+        className="flex flex-col px-4"
         style={{
-          paddingBottom: safeArea.bottom,
+          height: Dimensions.get("window").height - safeArea.top,
+          paddingBottom: safeArea.bottom + 24,
         }}
       >
         <View
           className="w-48 h-48 bg-zinc-800 rounded-md shadow-sm"
           style={{
-            width: windowWidth - 32,
-            height: windowWidth - 32,
+            width: "100%",
+            height: undefined,
+            aspectRatio: 1,
           }}
         >
           <Image
@@ -88,83 +96,81 @@ const FullScreenPlayer: React.FC<{
             style={{
               borderColor: "rgba(255, 255, 255, 0.2)",
               borderWidth: 0.5,
-              width: windowWidth - 32,
-              height: windowWidth - 32,
+              width: "100%",
+              height: undefined,
+              aspectRatio: 1,
             }}
           />
         </View>
 
-        <View
-          className="flex flex-row justify-between items-center mt-4"
-          style={{
-            width: windowWidth - 32,
-          }}
-        >
+        <View className="flex flex-row mt-12 justify-between items-center">
           <Text
-            className="text-zinc-500 font-semibold"
+            className="font-semibold text-2xl text-zinc-200"
             numberOfLines={1}
-            style={{
-              fontVariant: ["tabular-nums"],
-            }}
+            ellipsizeMode="tail"
           >
-            {parseLength(progress.position)}
+            {track?.title}
           </Text>
-          <View
-            className="h-4 flex flex-row items-center"
-            onStartShouldSetResponder={() => true}
-            onResponderRelease={(event) => {
-              const xPosition = event.nativeEvent.locationX;
-              const percent = xPosition / (windowWidth - 125);
-              TrackPlayer.seekTo(percent * progress.duration);
-            }}
-          >
-            <View
-              className="h-4 bg-zinc-800 rounded-md shadow-sm"
-              style={{
-                width: windowWidth - 125,
-              }}
-            >
-              <View
-                className="h-4 bg-zinc-200 rounded-md"
-                style={{
-                  width: Math.max(
-                    mustNumber(
-                      (progress.position / progress.duration) *
-                        (windowWidth - 125)
-                    ),
-                    2
-                  ),
-                }}
-              />
-            </View>
-          </View>
           <Text
-            className="text-zinc-500 font-semibold"
-            numberOfLines={1}
+            className="text-zinc-500"
             style={{
-              fontVariant: ["tabular-nums"],
+              paddingVertical: 2,
+              paddingHorizontal: 4,
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              borderWidth: 1,
+              borderRadius: 8,
             }}
           >
-            {parseLength(progress.duration)}
+            {track ? `${track.format.toUpperCase()} | ${track.bitrate}` : ""}
           </Text>
         </View>
         <Text
-          className="font-semibold mt-4 text-lg text-zinc-200"
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
-          {track ? track.title : ""}
-        </Text>
-        <Text
-          className="text-zinc-500 text-center text-lg"
+          className="text-zinc-500 text-lg -mt-1"
           numberOfLines={1}
           ellipsizeMode="tail"
         >
           {track ? track.artist : ""}
         </Text>
-        <View className="flex flex-row justify-center items-center mt-8">
+        <View className="flex flex-col w-full">
+          <View className="w-full h-8">
+            <Slider
+              style={{
+                width: "100%",
+              }}
+              minimumValue={0}
+              maximumValue={mustNumber(progress.duration)}
+              value={mustNumber(progress.position)}
+              minimumTrackTintColor="rgb(228 228 231)"
+              maximumTrackTintColor="rgb(39 39 42)"
+              thumbTintColor="transparent"
+              onSlidingComplete={(value) => {
+                TrackPlayer.seekTo(value);
+              }}
+            />
+          </View>
+          <View className="flex flex-row justify-between items-center w-full">
+            <Text
+              className="text-zinc-500 font-semibold"
+              numberOfLines={1}
+              style={{
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {parseLength(progress.position)}
+            </Text>
+            <Text
+              className="text-zinc-500 font-semibold"
+              numberOfLines={1}
+              style={{
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {parseLength(progress.duration)}
+            </Text>
+          </View>
+        </View>
+        <View className="flex flex-row justify-between items-center w-2/3 m-auto">
           <TouchableOpacity
-            className="h-16 w-16 flex flex-row items-center justify-center"
             onPress={() => {
               TrackPlayer.skipToPrevious();
             }}
@@ -172,7 +178,6 @@ const FullScreenPlayer: React.FC<{
             <Fa name="backward-step" size={48} color="rgb(228 228 231)" />
           </TouchableOpacity>
           <TouchableOpacity
-            className="h-24 w-24 flex flex-row items-center justify-center shadow-sm rounded-full mx-4"
             onPress={() => {
               if (playbackState.state === State.Playing) {
                 TrackPlayer.pause();
@@ -195,7 +200,6 @@ const FullScreenPlayer: React.FC<{
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            className="h-20 w-20 flex flex-row items-center justify-center"
             onPress={() => {
               TrackPlayer.skipToNext();
             }}
@@ -203,6 +207,20 @@ const FullScreenPlayer: React.FC<{
             <Fa name="forward-step" size={48} color="rgb(228 228 231)" />
           </TouchableOpacity>
         </View>
+        <Slider
+          style={{
+            width: "100%",
+          }}
+          minimumValue={0}
+          maximumValue={1}
+          value={volume}
+          minimumTrackTintColor="rgb(228 228 231)"
+          maximumTrackTintColor="rgb(39 39 42)"
+          thumbTintColor="rgb(228 228 231)"
+          onSlidingComplete={(value) => {
+            VolumeManager.setVolume(value);
+          }}
+        />
       </View>
     </BottomSheet>
   );
@@ -212,7 +230,7 @@ export const AudioPlayer: React.FC = () => {
   const safeArea = useSafeAreaInsets();
   const progress = useProgress(250);
   const playbackState = usePlaybackState();
-  const [track, setTrack] = useState<Track | null>(null);
+  const [track, setTrack] = useState<PlayerTrack | null>(null);
   const [fullScreen, setFullScreen] = useState(false);
 
   const previous = Gesture.Fling();
@@ -229,7 +247,7 @@ export const AudioPlayer: React.FC = () => {
 
   const showSheet = Gesture.Fling();
   showSheet.direction(Directions.UP);
-  showSheet.onEnd((e) => {
+  showSheet.onEnd(() => {
     setFullScreen(true);
   });
 
@@ -237,7 +255,7 @@ export const AudioPlayer: React.FC = () => {
 
   useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], (event) => {
     if (event.track) {
-      setTrack(event.track);
+      setTrack(event.track as PlayerTrack);
     }
   });
 
@@ -268,7 +286,7 @@ export const AudioPlayer: React.FC = () => {
             <View
               className="flex flex-col ml-2 h-9"
               style={{
-                width: windowWidth - 120,
+                width: "70%",
               }}
             >
               <Text
@@ -305,37 +323,37 @@ export const AudioPlayer: React.FC = () => {
               )}
             </TouchableOpacity>
           </View>
-          <View className="flex flex-row justify-between items-center px-2">
-            <Text className="text-zinc-500 text-xs" numberOfLines={1}>
+          <View className="flex flex-row justify-between items-center px-2 h-4">
+            <Text
+              className="text-zinc-500 text-xs"
+              style={{
+                fontVariant: ["tabular-nums"],
+              }}
+              numberOfLines={1}
+            >
               {parseLength(progress.position)}
             </Text>
-            <View
-              className="h-4 flex flex-row items-center"
-              onStartShouldSetResponder={() => true}
-              onResponderRelease={(event) => {
-                const xPosition = event.nativeEvent.locationX;
-                const percent = xPosition / (windowWidth - 100);
-                TrackPlayer.seekTo(percent * progress.duration);
+            <Slider
+              style={{
+                width: "75%",
               }}
+              minimumValue={0}
+              maximumValue={mustNumber(progress.duration)}
+              value={mustNumber(progress.position)}
+              minimumTrackTintColor="rgb(228 228 231)"
+              maximumTrackTintColor="rgb(39 39 42)"
+              thumbTintColor="transparent"
+              onSlidingComplete={(value) => {
+                TrackPlayer.seekTo(value);
+              }}
+            />
+            <Text
+              className="text-zinc-500 text-xs"
+              style={{
+                fontVariant: ["tabular-nums"],
+              }}
+              numberOfLines={1}
             >
-              <View
-                className="h-1 bg-zinc-800 rounded-md"
-                style={{
-                  width: windowWidth - 100,
-                }}
-              >
-                <View
-                  className="h-1 bg-zinc-200 rounded-md"
-                  style={{
-                    width: mustNumber(
-                      (progress.position / progress.duration) *
-                        (windowWidth - 100)
-                    ),
-                  }}
-                />
-              </View>
-            </View>
-            <Text className="text-zinc-500 text-xs" numberOfLines={1}>
               {parseLength(progress.duration)}
             </Text>
           </View>

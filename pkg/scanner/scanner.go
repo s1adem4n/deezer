@@ -106,6 +106,20 @@ func (s *Scanner) Watch() {
 					continue
 				}
 
+				// check if any album needs this track cover.
+				// if not, delete it.
+				if track.CoverPath != nil {
+					_, err = s.queries.GetAlbumByCoverPath(context.Background(), track.CoverPath)
+					if err != nil {
+						if err := os.Remove(*track.CoverPath); err != nil {
+							slog.Error(
+								"error removing track cover",
+								"err", err,
+							)
+						}
+					}
+				}
+
 				removedTracks = append(removedTracks, &diffs.Track{
 					ID: track.ID,
 					CreateTrackParams: db.CreateTrackParams{

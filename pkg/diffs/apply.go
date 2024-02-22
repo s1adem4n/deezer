@@ -111,6 +111,7 @@ func (d *Diffs) ApplyTracks(idMap IDMap) error {
 			Bitrate:   track.Bitrate,
 			AlbumID:   track.AlbumID,
 			Path:      track.Path,
+			Format:    track.Format,
 			AudioPath: track.AudioPath,
 			CoverPath: track.CoverPath,
 		})

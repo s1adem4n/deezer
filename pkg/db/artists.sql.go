@@ -112,7 +112,7 @@ func (q *Queries) GetArtistByName(ctx context.Context, name string) (Artist, err
 }
 
 const getArtistTracks = `-- name: GetArtistTracks :many
-SELECT id, title, position, length, bitrate, album_id, path, audio_path, cover_path, track_id, artist_id
+SELECT id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path, track_id, artist_id
 FROM tracks
   JOIN track_artists ON tracks.id = track_artists.track_id
 WHERE track_artists.artist_id = ?
@@ -125,6 +125,7 @@ type GetArtistTracksRow struct {
 	Length    int64   `json:"length"`
 	Bitrate   int64   `json:"bitrate"`
 	AlbumID   int64   `json:"albumId"`
+	Format    string  `json:"format"`
 	Path      string  `json:"path"`
 	AudioPath string  `json:"audioPath"`
 	CoverPath *string `json:"coverPath"`
@@ -148,6 +149,7 @@ func (q *Queries) GetArtistTracks(ctx context.Context, artistID int64) ([]GetArt
 			&i.Length,
 			&i.Bitrate,
 			&i.AlbumID,
+			&i.Format,
 			&i.Path,
 			&i.AudioPath,
 			&i.CoverPath,

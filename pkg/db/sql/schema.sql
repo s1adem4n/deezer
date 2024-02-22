@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS tracks (
   length INTEGER NOT NULL,
   bitrate INTEGER NOT NULL,
   album_id INTEGER NOT NULL,
+  format TEXT NOT NULL,
   path TEXT NOT NULL,
   audio_path TEXT NOT NULL,
   cover_path TEXT,

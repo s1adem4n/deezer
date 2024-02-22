@@ -121,6 +121,25 @@ func (q *Queries) GetAlbumArtists(ctx context.Context, albumID int64) ([]GetAlbu
 	return items, nil
 }
 
+const getAlbumByCoverPath = `-- name: GetAlbumByCoverPath :one
+SELECT id, title, year, genre, cover_path
+FROM albums
+WHERE cover_path = ?
+`
+
+func (q *Queries) GetAlbumByCoverPath(ctx context.Context, coverPath *string) (Album, error) {
+	row := q.db.QueryRowContext(ctx, getAlbumByCoverPath, coverPath)
+	var i Album
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Year,
+		&i.Genre,
+		&i.CoverPath,
+	)
+	return i, err
+}
+
 const getAlbumByTitle = `-- name: GetAlbumByTitle :one
 SELECT id, title, year, genre, cover_path
 FROM albums
@@ -179,7 +198,7 @@ func (q *Queries) GetAlbumByTitleAndArtistNames(ctx context.Context, arg GetAlbu
 }
 
 const getAlbumTracks = `-- name: GetAlbumTracks :many
-SELECT id, title, position, length, bitrate, album_id, path, audio_path, cover_path
+SELECT id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path
 FROM tracks
 WHERE album_id = ?
 ORDER BY position ASC,
@@ -202,6 +221,7 @@ func (q *Queries) GetAlbumTracks(ctx context.Context, albumID int64) ([]Track, e
 			&i.Length,
 			&i.Bitrate,
 			&i.AlbumID,
+			&i.Format,
 			&i.Path,
 			&i.AudioPath,
 			&i.CoverPath,

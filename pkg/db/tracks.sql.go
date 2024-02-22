@@ -31,12 +31,13 @@ INSERT INTO tracks (
     length,
     bitrate,
     album_id,
+    format,
     path,
     audio_path,
     cover_path
   )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, title, position, length, bitrate, album_id, path, audio_path, cover_path
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path
 `
 
 type CreateTrackParams struct {
@@ -45,6 +46,7 @@ type CreateTrackParams struct {
 	Length    int64   `json:"length"`
 	Bitrate   int64   `json:"bitrate"`
 	AlbumID   int64   `json:"albumId"`
+	Format    string  `json:"format"`
 	Path      string  `json:"path"`
 	AudioPath string  `json:"audioPath"`
 	CoverPath *string `json:"coverPath"`
@@ -57,6 +59,7 @@ func (q *Queries) CreateTrack(ctx context.Context, arg CreateTrackParams) (Track
 		arg.Length,
 		arg.Bitrate,
 		arg.AlbumID,
+		arg.Format,
 		arg.Path,
 		arg.AudioPath,
 		arg.CoverPath,
@@ -69,6 +72,7 @@ func (q *Queries) CreateTrack(ctx context.Context, arg CreateTrackParams) (Track
 		&i.Length,
 		&i.Bitrate,
 		&i.AlbumID,
+		&i.Format,
 		&i.Path,
 		&i.AudioPath,
 		&i.CoverPath,
@@ -87,7 +91,7 @@ func (q *Queries) DeleteTrack(ctx context.Context, id int64) error {
 }
 
 const getTrack = `-- name: GetTrack :one
-SELECT id, title, position, length, bitrate, album_id, path, audio_path, cover_path
+SELECT id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path
 FROM tracks
 WHERE id = ?
 `
@@ -102,6 +106,7 @@ func (q *Queries) GetTrack(ctx context.Context, id int64) (Track, error) {
 		&i.Length,
 		&i.Bitrate,
 		&i.AlbumID,
+		&i.Format,
 		&i.Path,
 		&i.AudioPath,
 		&i.CoverPath,
@@ -146,7 +151,7 @@ func (q *Queries) GetTrackArtists(ctx context.Context, trackID int64) ([]GetTrac
 }
 
 const getTrackByPath = `-- name: GetTrackByPath :one
-SELECT id, title, position, length, bitrate, album_id, path, audio_path, cover_path
+SELECT id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path
 FROM tracks
 WHERE path = ?
 `
@@ -161,6 +166,7 @@ func (q *Queries) GetTrackByPath(ctx context.Context, path string) (Track, error
 		&i.Length,
 		&i.Bitrate,
 		&i.AlbumID,
+		&i.Format,
 		&i.Path,
 		&i.AudioPath,
 		&i.CoverPath,
@@ -169,7 +175,7 @@ func (q *Queries) GetTrackByPath(ctx context.Context, path string) (Track, error
 }
 
 const getTrackByTitle = `-- name: GetTrackByTitle :one
-SELECT id, title, position, length, bitrate, album_id, path, audio_path, cover_path
+SELECT id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path
 FROM tracks
 WHERE title = ?
 `
@@ -184,6 +190,7 @@ func (q *Queries) GetTrackByTitle(ctx context.Context, title string) (Track, err
 		&i.Length,
 		&i.Bitrate,
 		&i.AlbumID,
+		&i.Format,
 		&i.Path,
 		&i.AudioPath,
 		&i.CoverPath,
@@ -192,7 +199,7 @@ func (q *Queries) GetTrackByTitle(ctx context.Context, title string) (Track, err
 }
 
 const getTrackByTitleAndAlbum = `-- name: GetTrackByTitleAndAlbum :one
-SELECT id, title, position, length, bitrate, album_id, path, audio_path, cover_path
+SELECT id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path
 FROM tracks
 WHERE title = ?
   AND album_id = ?
@@ -213,6 +220,7 @@ func (q *Queries) GetTrackByTitleAndAlbum(ctx context.Context, arg GetTrackByTit
 		&i.Length,
 		&i.Bitrate,
 		&i.AlbumID,
+		&i.Format,
 		&i.Path,
 		&i.AudioPath,
 		&i.CoverPath,
@@ -221,7 +229,7 @@ func (q *Queries) GetTrackByTitleAndAlbum(ctx context.Context, arg GetTrackByTit
 }
 
 const getTracks = `-- name: GetTracks :many
-SELECT id, title, position, length, bitrate, album_id, path, audio_path, cover_path
+SELECT id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path
 FROM tracks
 `
 
@@ -241,6 +249,7 @@ func (q *Queries) GetTracks(ctx context.Context) ([]Track, error) {
 			&i.Length,
 			&i.Bitrate,
 			&i.AlbumID,
+			&i.Format,
 			&i.Path,
 			&i.AudioPath,
 			&i.CoverPath,
@@ -275,6 +284,7 @@ SET title = ?,
   length = ?,
   bitrate = ?,
   album_id = ?,
+  format = ?,
   path = ?,
   audio_path = ?,
   cover_path = ?
@@ -287,6 +297,7 @@ type UpdateTrackParams struct {
 	Length    int64   `json:"length"`
 	Bitrate   int64   `json:"bitrate"`
 	AlbumID   int64   `json:"albumId"`
+	Format    string  `json:"format"`
 	Path      string  `json:"path"`
 	AudioPath string  `json:"audioPath"`
 	CoverPath *string `json:"coverPath"`
@@ -300,6 +311,7 @@ func (q *Queries) UpdateTrack(ctx context.Context, arg UpdateTrackParams) error 
 		arg.Length,
 		arg.Bitrate,
 		arg.AlbumID,
+		arg.Format,
 		arg.Path,
 		arg.AudioPath,
 		arg.CoverPath,

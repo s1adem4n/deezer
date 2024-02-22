@@ -26,6 +26,7 @@ type Track struct {
 	Picture *taglib.Picture
 	Length  uint
 	Bitrate uint
+	Format  string
 	Path    string
 }
 
@@ -50,6 +51,9 @@ func (t *TagReader) ReadPath(path string) (*Track, error) {
 	albumArtistsParser := &ArtistsParser{Input: file.AlbumArtist()}
 	albumArtistsParser.Parse()
 
+	// [1:] removes the dot
+	format := filepath.Ext(path)[1:]
+
 	res := &Track{
 		Title:        file.Title(),
 		Artists:      artistsParser.Artists,
@@ -61,6 +65,7 @@ func (t *TagReader) ReadPath(path string) (*Track, error) {
 		Picture:      picture,
 		Length:       uint(file.Length().Seconds()),
 		Bitrate:      file.Bitrate(),
+		Format:       format,
 		Path:         path,
 	}
 

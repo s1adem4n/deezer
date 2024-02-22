@@ -6,14 +6,26 @@ import { Album, Artist, Track as ApiTrack, api } from "$lib/api";
 import { apiTrackToPlayerTrack } from "$lib/api/utils";
 import { parseLength } from "$lib/utils";
 import React from "react";
-import TrackPlayer, { Track as PlayerTrack } from "react-native-track-player";
+import TrackPlayer, {
+  Event,
+  useTrackPlayerEvents,
+} from "react-native-track-player";
 import { useQuery } from "@tanstack/react-query";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { PlayerTrack } from "$lib/api/utils";
 
 const windowWidth = Dimensions.get("window").width;
 
 const Track = React.memo(
-  ({ track, onPlay }: { track: ApiTrack; onPlay?: () => void }) => {
+  ({
+    track,
+    onPlay,
+    active,
+  }: {
+    track: ApiTrack;
+    onPlay?: () => void;
+    active: boolean;
+  }) => {
     return (
       <View className="flex flex-row justify-between border-b border-zinc-900 p-4">
         <View className="flex flex-row gap-4">
@@ -29,7 +41,7 @@ const Track = React.memo(
           ) : null}
 
           <Text
-            className="text-zinc-200"
+            className={active ? "text-zinc-200 font-bold" : "text-zinc-200"}
             onPress={onPlay}
             style={{
               width: windowWidth - 125,
@@ -103,6 +115,14 @@ export default function Page() {
   const [refreshing, setRefreshing] = useState(false);
   const headerHeight = useHeaderHeight();
 
+  const [track, setTrack] = useState<PlayerTrack | null>(null);
+
+  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], (event) => {
+    if (event.track) {
+      setTrack(event.track as PlayerTrack);
+    }
+  });
+
   const getPlayerTracks = () => {
     if (!album.data || !tracks.data || !trackArtists.data) return;
 
@@ -133,16 +153,27 @@ export default function Page() {
         data={tracks.data}
         renderItem={({ item, index }) => (
           <Track
+            active={track?.id === item.id}
             track={item}
             onPlay={async () => {
-              while (!trackArtists.data) {
-                await new Promise((resolve) => setTimeout(resolve, 200));
-              }
-              const playerTracks = getPlayerTracks();
-              if (!playerTracks) return;
+              if (!trackArtists.data) return;
 
-              await TrackPlayer.reset();
-              await TrackPlayer.add(playerTracks);
+              const currentQueue = await TrackPlayer.getQueue();
+              let found = false;
+              for (const track of currentQueue || []) {
+                if (track.id === item.id) {
+                  found = true;
+                  break;
+                }
+              }
+
+              if (!found) {
+                const playerTracks = getPlayerTracks();
+                if (!playerTracks) return;
+                await TrackPlayer.reset();
+                await TrackPlayer.add(playerTracks);
+              }
+
               await TrackPlayer.skip(index);
               await TrackPlayer.play();
             }}
