@@ -5,6 +5,7 @@ import { Link, Stack } from "expo-router";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const windowWidth = Dimensions.get("window").width;
 
@@ -93,6 +94,7 @@ export default function Page() {
           <AlbumPreview album={item} index={index} />
         )}
         contentInset={{ top: headerHeight }}
+        scrollIndicatorInsets={{ top: 0 }}
         keyExtractor={(item) => item.id.toString()}
         refreshing={refreshing}
         onRefresh={albums.refetch}

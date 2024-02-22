@@ -3,7 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import playbackService from "$lib/playback-service";
 import TrackPlayer, { Capability } from "react-native-track-player";
 import { useState } from "react";
-import { AudioPlayer } from "$lib/audioplayer";
+import BottomControls from "$lib/audio/bottom-controls";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SystemUI from "expo-system-ui";
@@ -50,7 +50,7 @@ export default function Layout() {
             headerTintColor: "rgb(229 231 235)",
           }}
         ></Stack>
-        {loaded ? <AudioPlayer /> : null}
+        {loaded ? <BottomControls /> : null}
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

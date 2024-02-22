@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"context"
+	"deezer/pkg/config"
 	"deezer/pkg/db"
 	"deezer/pkg/diffs"
 	"deezer/pkg/tagreader"
@@ -26,25 +27,18 @@ type Scanner struct {
 	ctx        context.Context
 }
 
-type ScannerConfig struct {
-	DataPath  string
-	MusicPath string
-	Context   context.Context
-	Queries   *db.Queries
-}
-
-func NewScanner(config ScannerConfig) *Scanner {
+func NewScanner(queries *db.Queries, config *config.Config, ctx context.Context) *Scanner {
 	audioPath := filepath.Join(config.DataPath, "audio")
 	coverPath := filepath.Join(config.DataPath, "covers")
 
 	return &Scanner{
 		trackMover: trackmover.NewTrackMover(audioPath, coverPath),
-		watcher:    watcher.NewWatcher(config.MusicPath, config.Context, 1*time.Second, taglib.SupportedExtensions),
-		diffs:      diffs.NewDiffs(config.Queries, config.Context),
+		watcher:    watcher.NewWatcher(config.MusicPath, ctx, 1*time.Second, taglib.SupportedExtensions),
+		diffs:      diffs.NewDiffs(queries, ctx),
 		tagReader:  tagreader.NewTagReader(config.MusicPath),
 		lock:       sync.Mutex{},
-		queries:    config.Queries,
-		ctx:        config.Context,
+		queries:    queries,
+		ctx:        ctx,
 	}
 }
 

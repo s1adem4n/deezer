@@ -1,15 +1,12 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Dimensions, FlatList, Text, View } from "react-native";
-import { Album, Artist, Track as ApiTrack, api } from "$lib/api";
+import { Artist, Track as ApiTrack, api } from "$lib/api";
 import { apiTrackToPlayerTrack } from "$lib/api/utils";
 import { parseLength } from "$lib/utils";
 import React from "react";
-import TrackPlayer, {
-  Event,
-  useTrackPlayerEvents,
-} from "react-native-track-player";
+import TrackPlayer from "react-native-track-player";
 import { useQuery } from "@tanstack/react-query";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { PlayerTrack } from "$lib/api/utils";
@@ -17,15 +14,7 @@ import { PlayerTrack } from "$lib/api/utils";
 const windowWidth = Dimensions.get("window").width;
 
 const Track = React.memo(
-  ({
-    track,
-    onPlay,
-    active,
-  }: {
-    track: ApiTrack;
-    onPlay?: () => void;
-    active: boolean;
-  }) => {
+  ({ track, onPlay }: { track: ApiTrack; onPlay?: () => void }) => {
     return (
       <View className="flex flex-row justify-between border-b border-zinc-900 p-4">
         <View className="flex flex-row gap-4">
@@ -41,7 +30,7 @@ const Track = React.memo(
           ) : null}
 
           <Text
-            className={active ? "text-zinc-200 font-bold" : "text-zinc-200"}
+            className="text-zinc-200"
             onPress={onPlay}
             style={{
               width: windowWidth - 125,
@@ -115,14 +104,6 @@ export default function Page() {
   const [refreshing, setRefreshing] = useState(false);
   const headerHeight = useHeaderHeight();
 
-  const [track, setTrack] = useState<PlayerTrack | null>(null);
-
-  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], (event) => {
-    if (event.track) {
-      setTrack(event.track as PlayerTrack);
-    }
-  });
-
   const getPlayerTracks = () => {
     if (!album.data || !tracks.data || !trackArtists.data) return;
 
@@ -149,11 +130,11 @@ export default function Page() {
           setRefreshing(false);
         }}
         contentInset={{ top: headerHeight }}
+        scrollIndicatorInsets={{ top: 0 }}
         initialNumToRender={12}
         data={tracks.data}
         renderItem={({ item, index }) => (
           <Track
-            active={track?.id === item.id}
             track={item}
             onPlay={async () => {
               if (!trackArtists.data) return;

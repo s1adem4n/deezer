@@ -13,3 +13,10 @@ export const parseLengthHours = (length: number) => {
     .toString()
     .padStart(2, "0")}`;
 };
+
+export const mustNumber = (value: number | null | undefined): number => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return 0;
+  }
+  return value;
+};
