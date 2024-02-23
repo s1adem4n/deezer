@@ -29,10 +29,15 @@ func (s *Stream) Convert() error {
 		format = "copy"
 	}
 
+	bitrate := s.Bitrate
+	if bitrate > 320 {
+		bitrate = 320
+	}
+
 	args := []string{
 		"-i", "-",
 		"-c:a", format, "-vn",
-		"-b:a", fmt.Sprintf("%dk", s.Bitrate),
+		"-b:a", fmt.Sprintf("%dk", bitrate),
 		"-hls_time", "10", "-hls_list_size", "0",
 		"-hls_segment_filename", filepath.Join(s.OutputPath, "segment_%d.ts"),
 		filepath.Join(s.OutputPath, "stream.m3u8"),

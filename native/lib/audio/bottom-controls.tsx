@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { View, Image, Text, TouchableOpacity } from "react-native";
+import {
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import {
   Directions,
   Gesture,
@@ -16,8 +22,8 @@ import TrackPlayer, {
 import { PlayerTrack } from "./controls";
 import { parseLength, mustNumber } from "$lib/utils";
 import Fa from "@expo/vector-icons/FontAwesome6";
-import Slider from "@react-native-community/slider";
 import FullscreenControls from "./fullscreen-controls";
+import ProgressSlider from "./progress-slider";
 
 const BottomControls: React.FC = () => {
   const safeArea = useSafeAreaInsets();
@@ -92,6 +98,10 @@ const BottomControls: React.FC = () => {
 
             <TouchableOpacity
               className="ml-auto mr-2"
+              disabled={
+                playbackState.state === State.Loading ||
+                playbackState.state === State.Buffering
+              }
               onPress={() => {
                 if (playbackState.state === State.Playing) {
                   TrackPlayer.pause();
@@ -102,6 +112,9 @@ const BottomControls: React.FC = () => {
             >
               {playbackState.state === State.Playing ? (
                 <Fa name="pause" size={24} color="rgb(228 228 231)" />
+              ) : playbackState.state === State.Loading ||
+                playbackState.state === State.Buffering ? (
+                <ActivityIndicator />
               ) : (
                 <Fa name="play" size={24} color="rgb(228 228 231)" />
               )}
@@ -117,22 +130,7 @@ const BottomControls: React.FC = () => {
             >
               {parseLength(progress.position)}
             </Text>
-            <Slider
-              style={{
-                width: "100%",
-                flexShrink: 1,
-              }}
-              minimumValue={0}
-              tapToSeek
-              maximumValue={mustNumber(progress.duration)}
-              value={mustNumber(progress.position)}
-              minimumTrackTintColor="rgb(228 228 231)"
-              maximumTrackTintColor="rgb(39 39 42)"
-              thumbTintColor="transparent"
-              onSlidingComplete={(value) => {
-                TrackPlayer.seekTo(value);
-              }}
-            />
+            <ProgressSlider progress={progress} />
             <Text
               className="text-zinc-500 text-xs ml-2"
               style={{

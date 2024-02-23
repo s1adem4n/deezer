@@ -1,7 +1,14 @@
 import { PlayerTrack } from "./controls";
 import { mustNumber, parseLength } from "$lib/utils";
 import Slider from "@react-native-community/slider";
-import { TouchableOpacity, View, Text, Dimensions, Image } from "react-native";
+import {
+  TouchableOpacity,
+  View,
+  Text,
+  Dimensions,
+  Image,
+  ActivityIndicator,
+} from "react-native";
 import TrackPlayer, {
   PlaybackState,
   Progress,
@@ -12,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useState } from "react";
 import BottomSheet from "@gorhom/bottom-sheet";
 import Fa from "@expo/vector-icons/FontAwesome6";
+import ProgressSlider from "./progress-slider";
 
 const FullscreenControls: React.FC<{
   progress: Progress;
@@ -107,23 +115,9 @@ const FullscreenControls: React.FC<{
         >
           {track ? track.artist : ""}
         </Text>
-        <View className="flex flex-col w-full">
-          <View className="w-full h-8">
-            <Slider
-              style={{
-                width: "100%",
-              }}
-              minimumValue={0}
-              maximumValue={mustNumber(progress.duration)}
-              value={mustNumber(progress.position)}
-              minimumTrackTintColor="rgb(228 228 231)"
-              maximumTrackTintColor="rgb(39 39 42)"
-              thumbTintColor="transparent"
-              onSlidingComplete={(value) => {
-                TrackPlayer.seekTo(value);
-              }}
-            />
-          </View>
+        <View className="flex flex-col w-full mt-2">
+          <ProgressSlider progress={progress} />
+
           <View className="flex flex-row justify-between items-center w-full">
             <Text
               className="text-zinc-500 font-semibold"
@@ -154,6 +148,10 @@ const FullscreenControls: React.FC<{
             <Fa name="backward-step" size={48} color="rgb(228 228 231)" />
           </TouchableOpacity>
           <TouchableOpacity
+            disabled={
+              playbackState.state === State.Loading ||
+              playbackState.state === State.Buffering
+            }
             onPress={() => {
               if (playbackState.state === State.Playing) {
                 TrackPlayer.pause();
@@ -163,16 +161,12 @@ const FullscreenControls: React.FC<{
             }}
           >
             {playbackState.state === State.Playing ? (
-              <Fa name="pause" size={60} color="rgb(228 228 231)" />
+              <Fa name="pause" size={64} color="rgb(228 228 231)" />
+            ) : playbackState.state === State.Loading ||
+              playbackState.state === State.Buffering ? (
+              <ActivityIndicator size="large" />
             ) : (
-              <Fa
-                name="play"
-                style={{
-                  marginLeft: 8,
-                }}
-                size={60}
-                color="rgb(228 228 231)"
-              />
+              <Fa name="play" size={64} color="rgb(228 228 231)" />
             )}
           </TouchableOpacity>
           <TouchableOpacity

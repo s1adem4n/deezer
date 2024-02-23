@@ -1,15 +1,14 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 
-import { Dimensions, FlatList, Text, View } from "react-native";
-import { Artist, Track as ApiTrack, api } from "$lib/api";
-import { apiTrackToPlayerTrack } from "$lib/api/utils";
+import { Dimensions, FlatList, Image, Text, View } from "react-native";
+import { Artist, Track as ApiTrack, api, BASE_URL } from "$lib/api";
 import { parseLength } from "$lib/utils";
 import React from "react";
 import TrackPlayer from "react-native-track-player";
 import { useQuery } from "@tanstack/react-query";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { PlayerTrack } from "$lib/api/utils";
+import { PlayerTrack, apiTrackToPlayerTrack } from "$lib/audio/controls";
 
 const windowWidth = Dimensions.get("window").width;
 
@@ -78,6 +77,16 @@ export default function Page() {
       }
     },
   });
+  const albumArtists = useQuery({
+    queryKey: ["albums", id, "artists"],
+    queryFn: async () => {
+      if (typeof id === "string") {
+        const parsedId = parseInt(id);
+        const artists = await api.albums.artists(parsedId);
+        return artists;
+      }
+    },
+  });
   const tracks = useQuery({
     queryKey: ["albums", id, "tracks"],
     queryFn: async () => {
@@ -129,10 +138,60 @@ export default function Page() {
           await trackArtists.refetch();
           setRefreshing(false);
         }}
-        contentInset={{ top: headerHeight }}
         scrollIndicatorInsets={{ top: 0 }}
         initialNumToRender={12}
         data={tracks.data}
+        ListHeaderComponent={() => (
+          <View
+            className="flex flex-row h-36 w-full m-2"
+            style={{
+              marginTop: headerHeight + 8,
+            }}
+          >
+            <View className="rounded-md bg-zinc-800 h-36 w-36">
+              {album.data ? (
+                <Image
+                  source={{ uri: `${BASE_URL}/${album.data.coverPath}` }}
+                  className="rounded-md w-36 h-36"
+                  style={{
+                    borderColor: "rgba(255, 255, 255, 0.2)",
+                    borderWidth: 0.5,
+                  }}
+                ></Image>
+              ) : null}
+            </View>
+            <View
+              className="flex flex-col ml-2"
+              style={{
+                width: windowWidth - 164,
+              }}
+            >
+              <Text
+                className="font-semibold text-xl text-zinc-200"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {album.data?.title}
+              </Text>
+              <Text
+                className="text-zinc-500"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {albumArtists.data?.map((artist) => artist.name).join(", ")}
+              </Text>
+              <Text
+                className="text-zinc-500 mt-0.5"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {[album.data?.year, album.data?.genre]
+                  .filter(Boolean)
+                  .join(" • ")}
+              </Text>
+            </View>
+          </View>
+        )}
         renderItem={({ item, index }) => (
           <Track
             track={item}

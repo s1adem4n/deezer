@@ -93,8 +93,8 @@ export default function Page() {
         renderItem={({ item, index }) => (
           <AlbumPreview album={item} index={index} />
         )}
-        contentInset={{ top: headerHeight }}
         scrollIndicatorInsets={{ top: 0 }}
+        ListHeaderComponent={() => <View style={{ marginTop: headerHeight }} />}
         keyExtractor={(item) => item.id.toString()}
         refreshing={refreshing}
         onRefresh={albums.refetch}
