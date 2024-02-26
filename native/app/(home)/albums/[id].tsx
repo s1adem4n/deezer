@@ -2,18 +2,18 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 
 import { Dimensions, FlatList, Image, Text, View } from "react-native";
-import { Artist, Track as ApiTrack, api, BASE_URL } from "$lib/api";
+import { Track as APITrack, api, BASE_URL } from "$lib/api";
 import { parseLength } from "$lib/utils";
 import React from "react";
-import TrackPlayer from "react-native-track-player";
 import { useQuery } from "@tanstack/react-query";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { PlayerTrack, apiTrackToPlayerTrack } from "$lib/audio/controls";
+import { playTrack } from "$lib/audio/controls";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const windowWidth = Dimensions.get("window").width;
 
 const Track = React.memo(
-  ({ track, onPlay }: { track: ApiTrack; onPlay?: () => void }) => {
+  ({ track, onPlay }: { track: APITrack; onPlay?: () => void }) => {
     return (
       <View className="flex flex-row justify-between border-b border-zinc-900 p-4">
         <View className="flex flex-row gap-4">
@@ -67,64 +67,32 @@ function formatDuration(seconds: number) {
 
 export default function Page() {
   const { id } = useLocalSearchParams();
+  const parsedId = typeof id === "string" ? parseInt(id) : 0;
+
   const album = useQuery({
     queryKey: ["albums", id],
-    queryFn: async () => {
-      if (typeof id === "string") {
-        const parsedId = parseInt(id);
-        const albums = await api.albums.get(parsedId);
-        return albums;
-      }
-    },
+    queryFn: async () => await api.albums.get(parsedId),
   });
   const albumArtists = useQuery({
     queryKey: ["albums", id, "artists"],
-    queryFn: async () => {
-      if (typeof id === "string") {
-        const parsedId = parseInt(id);
-        const artists = await api.albums.artists(parsedId);
-        return artists;
-      }
-    },
+    queryFn: async () => await api.albums.artists(parsedId),
   });
   const tracks = useQuery({
     queryKey: ["albums", id, "tracks"],
-    queryFn: async () => {
-      if (typeof id === "string") {
-        const parsedId = parseInt(id);
-        const tracks = await api.albums.tracks(parsedId);
-        getPlayerTracks();
-        return tracks;
-      }
-    },
+    queryFn: async () => await api.albums.tracks(parsedId),
   });
   const trackArtists = useQuery({
     queryKey: ["albums", id, "tracks", "artists"],
     queryFn: async () => {
-      const res: Artist[][] = [];
-      for (const track of tracks.data || []) {
-        const artists = await api.tracks.artists(track.id);
-        res.push(artists);
-      }
-      return res;
+      const ids = tracks.data?.map((track) => track.id) || [];
+      return await api.tracks.artistsBatch(ids);
     },
-    enabled: tracks.data ? true : false,
+    enabled: !!tracks.data,
   });
+
   const [refreshing, setRefreshing] = useState(false);
   const headerHeight = useHeaderHeight();
-
-  const getPlayerTracks = () => {
-    if (!album.data || !tracks.data || !trackArtists.data) return;
-
-    const playerTracks: PlayerTrack[] = [];
-    for (let i = 0; i < tracks.data.length; i++) {
-      const track = tracks.data[i];
-      const artists = trackArtists.data[i];
-
-      playerTracks.push(apiTrackToPlayerTrack(track, artists, album.data));
-    }
-    return playerTracks;
-  };
+  const safeAreaInsets = useSafeAreaInsets();
 
   return (
     <View className="flex-1 bg-black">
@@ -135,17 +103,16 @@ export default function Page() {
           setRefreshing(true);
           await album.refetch();
           await tracks.refetch();
-          await trackArtists.refetch();
           setRefreshing(false);
         }}
-        scrollIndicatorInsets={{ top: 0 }}
         initialNumToRender={12}
         data={tracks.data}
+        progressViewOffset={headerHeight + safeAreaInsets.top}
         ListHeaderComponent={() => (
           <View
             className="flex flex-row h-36 w-full m-2"
             style={{
-              marginTop: headerHeight + 8,
+              marginTop: headerHeight + safeAreaInsets.top + 8,
             }}
           >
             <View className="rounded-md bg-zinc-800 h-36 w-36">
@@ -192,30 +159,11 @@ export default function Page() {
             </View>
           </View>
         )}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <Track
             track={item}
             onPlay={async () => {
-              if (!trackArtists.data) return;
-
-              const currentQueue = await TrackPlayer.getQueue();
-              let found = false;
-              for (const track of currentQueue || []) {
-                if (track.id === item.id) {
-                  found = true;
-                  break;
-                }
-              }
-
-              if (!found) {
-                const playerTracks = getPlayerTracks();
-                if (!playerTracks) return;
-                await TrackPlayer.reset();
-                await TrackPlayer.add(playerTracks);
-              }
-
-              await TrackPlayer.skip(index);
-              await TrackPlayer.play();
+              playTrack(item, album.data, tracks.data, trackArtists.data);
             }}
           />
         )}

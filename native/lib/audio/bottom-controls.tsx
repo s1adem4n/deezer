@@ -11,7 +11,6 @@ import {
   Gesture,
   GestureDetector,
 } from "react-native-gesture-handler";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TrackPlayer, {
   usePlaybackState,
   useProgress,
@@ -20,13 +19,10 @@ import TrackPlayer, {
   State,
 } from "react-native-track-player";
 import { PlayerTrack } from "./controls";
-import { parseLength, mustNumber } from "$lib/utils";
 import Fa from "@expo/vector-icons/FontAwesome6";
 import FullscreenControls from "./fullscreen-controls";
-import ProgressSlider from "./progress-slider";
 
 const BottomControls: React.FC = () => {
-  const safeArea = useSafeAreaInsets();
   const progress = useProgress(250);
   const playbackState = usePlaybackState();
   const [track, setTrack] = useState<PlayerTrack | null>(null);
@@ -61,12 +57,7 @@ const BottomControls: React.FC = () => {
   return (
     <>
       <GestureDetector gesture={gestures}>
-        <View
-          className="flex flex-col border-t border-zinc-900 bg-black"
-          style={{
-            paddingBottom: safeArea.bottom,
-          }}
-        >
+        <View className="flex flex-col border-t border-zinc-900 bg-black">
           <View className="p-2 flex flex-row items-center">
             <View className="w-12 h-12 rounded-md bg-zinc-800 shadow-sm">
               {track ? (
@@ -120,26 +111,17 @@ const BottomControls: React.FC = () => {
               )}
             </TouchableOpacity>
           </View>
-          <View className="flex flex-row justify-between items-center px-2 h-4 w-full">
-            <Text
-              className="text-zinc-500 text-xs mr-2"
+          <View className="w-full h-1 bg-zinc-900">
+            <View
+              className="bg-zinc-200 h-1"
               style={{
-                fontVariant: ["tabular-nums"],
+                width: `${
+                  !(progress.position === 0)
+                    ? (progress.position / progress.duration) * 100
+                    : 0
+                }%`,
               }}
-              numberOfLines={1}
-            >
-              {parseLength(progress.position)}
-            </Text>
-            <ProgressSlider progress={progress} />
-            <Text
-              className="text-zinc-500 text-xs ml-2"
-              style={{
-                fontVariant: ["tabular-nums"],
-              }}
-              numberOfLines={1}
-            >
-              {parseLength(progress.duration)}
-            </Text>
+            ></View>
           </View>
         </View>
       </GestureDetector>

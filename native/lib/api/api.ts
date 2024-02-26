@@ -1,4 +1,4 @@
-import type { Album, Artist, Track } from "./types";
+import type { Album, Artist, Band, Track } from "./types";
 
 export class API {
   baseUrl: string;
@@ -21,6 +21,22 @@ export class API {
       const response = await fetch(`${this.baseUrl}/tracks/${id}/artists`);
       return response.json();
     },
+    artistsBatch: async (ids: number[]): Promise<Artist[][]> => {
+      const response = await fetch(
+        `${this.baseUrl}/tracks/artists?ids=${ids.join(",")}`
+      );
+      return response.json();
+    },
+    stream: (id: number, bitrate: number, bands?: Band[]) => {
+      const query = new URLSearchParams({ bitrate: bitrate.toString() });
+      const bandsStrings = bands
+        ?.map((band) => `${band.frequency}:${band.gain.toFixed(2)}`)
+        .join(",");
+      if (bandsStrings) {
+        query.set("equalizer", bandsStrings);
+      }
+      return `${this.baseUrl}/tracks/${id}/stream?${query.toString()}`;
+    },
   };
   albums = {
     list: async (): Promise<Album[]> => {
@@ -31,7 +47,7 @@ export class API {
       const response = await fetch(`${this.baseUrl}/albums/${id}`);
       return response.json();
     },
-    tracks: async (id: number): Promise<Track[] | null> => {
+    tracks: async (id: number): Promise<Track[]> => {
       const response = await fetch(`${this.baseUrl}/albums/${id}/tracks`);
       return response.json();
     },

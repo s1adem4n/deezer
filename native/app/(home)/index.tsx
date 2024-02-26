@@ -1,7 +1,14 @@
-import { Dimensions, FlatList, Image, Text, View } from "react-native";
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 import { Album, BASE_URL, api } from "$lib/api";
 import { useState } from "react";
-import { Link, Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -28,7 +35,11 @@ const AlbumPreview = React.memo(
           paddingTop: 12,
         }}
       >
-        <Link href={`/albums/${album.id}`}>
+        <TouchableWithoutFeedback
+          onPress={() => {
+            router.push(`/albums/${album.id}`);
+          }}
+        >
           <View
             className="rounded-md bg-zinc-800"
             style={{
@@ -49,7 +60,7 @@ const AlbumPreview = React.memo(
               }}
             ></Image>
           </View>
-        </Link>
+        </TouchableWithoutFeedback>
 
         <Text
           className="font-semibold mt-0.5 text-zinc-200"
@@ -58,6 +69,7 @@ const AlbumPreview = React.memo(
         >
           {album.title}
         </Text>
+
         <Text className="text-zinc-500" numberOfLines={1} ellipsizeMode="tail">
           {artists.data?.map((artist) => artist.name).join(", ")}
         </Text>
@@ -79,6 +91,7 @@ export default function Page() {
   });
   const [refreshing, setRefreshing] = useState(false);
   const headerHeight = useHeaderHeight();
+  const safeAreaInsets = useSafeAreaInsets();
 
   return (
     <View className="flex-1 bg-black text-zinc-200">
@@ -90,11 +103,12 @@ export default function Page() {
       <FlatList
         data={albums.data}
         numColumns={2}
+        scrollIndicatorInsets={{ top: 0 }}
+        progressViewOffset={headerHeight + safeAreaInsets.top}
+        contentInset={{ top: headerHeight + safeAreaInsets.top }}
         renderItem={({ item, index }) => (
           <AlbumPreview album={item} index={index} />
         )}
-        scrollIndicatorInsets={{ top: 0 }}
-        ListHeaderComponent={() => <View style={{ marginTop: headerHeight }} />}
         keyExtractor={(item) => item.id.toString()}
         refreshing={refreshing}
         onRefresh={albums.refetch}

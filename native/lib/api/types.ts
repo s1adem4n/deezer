@@ -24,3 +24,8 @@ export interface Album {
   genre: string;
   coverPath: string;
 }
+
+export interface Band {
+  frequency: number;
+  gain: number;
+}

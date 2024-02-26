@@ -1,6 +1,7 @@
 package stream
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -12,9 +13,15 @@ import (
 
 type Stream struct {
 	Bitrate    int
+	Equalizer  *Equalizer
 	Data       io.Reader
 	OutputPath string
 	Format     string
+	// Whether to re-encode the audio or not.
+	// If format is not mp3 or m4a, this value won't be used (since HLS requires aac or mp3)
+	Encode bool
+	// Whether to normalize the audio with loudnorm filter
+	Normalize bool
 }
 
 // convert a input audio file to a HLS stream
@@ -23,29 +30,44 @@ func (s *Stream) Convert() error {
 		return err
 	}
 
-	// no need to convert if the format is already mp3 or m4a (aac)
 	format := "aac"
-	if s.Format == "mp3" || s.Format == "m4a" {
+	if !s.Encode &&
+		s.Equalizer == nil &&
+		(s.Format == "mp3" || s.Format == "m4a") {
 		format = "copy"
 	}
 
-	bitrate := s.Bitrate
-	if bitrate > 320 {
-		bitrate = 320
-	}
-
 	args := []string{
+		"-y", "-hide_banner", "-loglevel", "error",
 		"-i", "-",
 		"-c:a", format, "-vn",
-		"-b:a", fmt.Sprintf("%dk", bitrate),
+		"-b:a", fmt.Sprintf("%dk", s.Bitrate),
 		"-hls_time", "10", "-hls_list_size", "0",
 		"-hls_segment_filename", filepath.Join(s.OutputPath, "segment_%d.ts"),
-		filepath.Join(s.OutputPath, "stream.m3u8"),
 	}
+
+	if s.Equalizer != nil {
+		args = append(args, "-af", s.Equalizer.ToFilter())
+	}
+
+	if s.Normalize {
+		args = append(args, "-af", "loudnorm")
+	}
+
+	args = append(args, filepath.Join(s.OutputPath, "stream.m3u8"))
+
+	// stderr reader
+	stderr := &bytes.Buffer{}
+
 	cmd := exec.Command("ffmpeg", args...)
 	cmd.Stdin = s.Data
 	cmd.Stdout = nil
-	cmd.Stderr = nil
+	cmd.Stderr = stderr
+
 	err := cmd.Run()
-	return err
+	if err != nil {
+		return fmt.Errorf("err: %s, stderr: %s", err, stderr.String())
+	}
+
+	return nil
 }

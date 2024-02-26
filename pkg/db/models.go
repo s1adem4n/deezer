@@ -25,6 +25,14 @@ type Artist struct {
 	Description *string `json:"description"`
 }
 
+type Stream struct {
+	ID        int64  `json:"id"`
+	Bitrate   int64  `json:"bitrate"`
+	Equalizer string `json:"equalizer"`
+	Path      string `json:"path"`
+	TrackID   int64  `json:"trackId"`
+}
+
 type Track struct {
 	ID        int64   `json:"id"`
 	Title     string  `json:"title"`

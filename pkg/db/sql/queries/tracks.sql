@@ -27,6 +27,11 @@ SELECT *
 FROM tracks
 WHERE path = ?;
 
+-- name: GetTrackStreams :many
+SELECT *
+FROM streams
+WHERE track_id = ?;
+
 -- name: GetTrackArtists :many
 SELECT artists.id,
   artists.name

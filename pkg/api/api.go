@@ -5,6 +5,7 @@ import (
 	"deezer/pkg/db"
 	"log/slog"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -12,6 +13,19 @@ import (
 
 func ParseInt64(s string) (int64, error) {
 	return strconv.ParseInt(s, 10, 64)
+}
+
+func ParseInt64Slice(s string) ([]int64, error) {
+	parts := strings.Split(s, ",")
+	ids := make([]int64, len(parts))
+	for i, part := range parts {
+		id, err := ParseInt64(part)
+		if err != nil {
+			return nil, err
+		}
+		ids[i] = id
+	}
+	return ids, nil
 }
 
 type Server struct {
@@ -32,10 +46,24 @@ func NewServer(queries *db.Queries, config *config.Config) Server {
 	}
 }
 
+var imageExtensions = []string{
+	".jpg",
+	".jpeg",
+	".png",
+	".gif",
+	".webp",
+}
+
 func CacheMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			c.Response().Header().Set("Cache-Control", "public, max-age=3600")
+			for _, ext := range imageExtensions {
+				if strings.HasSuffix(c.Request().URL.Path, ext) {
+					c.Response().Header().Set("Cache-Control", "public, max-age=3600")
+					break
+				}
+			}
+
 			return next(c)
 		}
 	}
@@ -60,10 +88,7 @@ func (s *Server) UseDefaultMiddleware() {
 	s.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Level: 5,
 	}))
-
-	if s.config.EnableCache {
-		s.Use(CacheMiddleware())
-	}
+	s.Use(CacheMiddleware())
 }
 
 func (s *Server) RegisterRoutes() {
@@ -73,6 +98,8 @@ func (s *Server) RegisterRoutes() {
 	api.GET("/tracks", s.GetTracks)
 	api.GET("/tracks/:id", s.GetTrack)
 	api.GET("/tracks/:id/artists", s.GetTrackArtists)
+	api.GET("/tracks/artists", s.GetTrackArtistsBatch)
+	api.GET("/tracks/:id/streams", s.GetTrackStreams)
 	api.GET("/tracks/:id/stream", s.GetTrackStream)
 
 	api.GET("/artists", s.GetArtists)
@@ -83,6 +110,9 @@ func (s *Server) RegisterRoutes() {
 	api.GET("/albums/:id", s.GetAlbum)
 	api.GET("/albums/:id/tracks", s.GetAlbumTracks)
 	api.GET("/albums/:id/artists", s.GetAlbumArtists)
+
+	api.GET("/streams", s.GetStreams)
+	api.GET("/streams/:id", s.GetStream)
 }
 
 func (s *Server) Listen() {

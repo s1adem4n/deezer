@@ -12,6 +12,17 @@ CREATE TABLE IF NOT EXISTS tracks (
   FOREIGN KEY (album_id) REFERENCES albums (id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS streams (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  bitrate INTEGER NOT NULL,
+  -- comma separated list of frequency:gain pairs
+  equalizer TEXT NOT NULL,
+  -- path to .m3u8 file
+  path TEXT NOT NULL,
+  track_id INTEGER NOT NULL,
+  FOREIGN KEY (track_id) REFERENCES tracks (id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS artists (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,

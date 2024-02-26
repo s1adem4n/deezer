@@ -49,7 +49,6 @@ func main() {
 		DataPath:      "./data",
 		MusicPath:     "./music",
 		ServerAddress: ":8080",
-		EnableCache:   false,
 	}
 
 	scanner := scanner.NewScanner(queries, config, ctx)

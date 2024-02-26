@@ -228,6 +228,41 @@ func (q *Queries) GetTrackByTitleAndAlbum(ctx context.Context, arg GetTrackByTit
 	return i, err
 }
 
+const getTrackStreams = `-- name: GetTrackStreams :many
+SELECT id, bitrate, equalizer, path, track_id
+FROM streams
+WHERE track_id = ?
+`
+
+func (q *Queries) GetTrackStreams(ctx context.Context, trackID int64) ([]Stream, error) {
+	rows, err := q.db.QueryContext(ctx, getTrackStreams, trackID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Stream
+	for rows.Next() {
+		var i Stream
+		if err := rows.Scan(
+			&i.ID,
+			&i.Bitrate,
+			&i.Equalizer,
+			&i.Path,
+			&i.TrackID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTracks = `-- name: GetTracks :many
 SELECT id, title, position, length, bitrate, album_id, format, path, audio_path, cover_path
 FROM tracks
