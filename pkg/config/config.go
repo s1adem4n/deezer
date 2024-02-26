@@ -9,6 +9,7 @@ import (
 type Config struct {
 	DataPath      string
 	MusicPath     string
+	DatabasePath  string
 	ServerAddress string
 }
 

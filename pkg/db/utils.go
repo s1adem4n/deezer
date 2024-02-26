@@ -12,8 +12,8 @@ import (
 //go:embed sql/schema.sql
 var schema string
 
-func NewDatabase(ctx context.Context) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./database.sqlite?_timeout=1000&_journal_mode=WAL&_synchronous=normal")
+func NewDatabase(ctx context.Context, path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", path+"?_timeout=1000&_journal_mode=WAL&_synchronous=normal")
 	if err != nil {
 		return nil, err
 	}

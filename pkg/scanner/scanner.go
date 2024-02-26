@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/s1adem4n/go-taglib"
+	taglib "github.com/s1adem4n/go-taglib"
 )
 
 type Scanner struct {

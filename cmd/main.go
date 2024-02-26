@@ -28,12 +28,21 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	config, err := config.ParseConfig()
+	if err != nil {
+		slog.Error(
+			"failed to parse config",
+			"err", err,
+		)
+		return
+	}
+
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
 	ctx := context.Background()
-	conn, err := db.NewDatabase(ctx)
+	conn, err := db.NewDatabase(ctx, config.DatabasePath)
 	if err != nil {
 		slog.Error(
 			"failed to connect to database",
@@ -44,15 +53,6 @@ func main() {
 	defer conn.Close()
 
 	queries := db.New(conn)
-
-	config, err := config.ParseConfig()
-	if err != nil {
-		slog.Error(
-			"failed to parse config",
-			"err", err,
-		)
-		return
-	}
 
 	scanner := scanner.NewScanner(queries, config, ctx)
 	go scanner.Watch()

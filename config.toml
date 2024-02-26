@@ -1,3 +1,4 @@
 dataPath = "./data"
-musicPath = "./music"
+musicPath = "./data/music"
+databasePath = "./data/database.db"
 serverAddress = ":8080"
