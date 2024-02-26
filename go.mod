@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/pelletier/go-toml/v2 v2.1.1
 	github.com/s1adem4n/go-taglib v0.0.7
 )
 

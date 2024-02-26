@@ -1,0 +1,3 @@
+dataPath = "./data"
+musicPath = "./music"
+serverAddress = ":8080"

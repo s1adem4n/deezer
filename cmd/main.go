@@ -45,10 +45,13 @@ func main() {
 
 	queries := db.New(conn)
 
-	config := &config.Config{
-		DataPath:      "./data",
-		MusicPath:     "./music",
-		ServerAddress: ":8080",
+	config, err := config.ParseConfig()
+	if err != nil {
+		slog.Error(
+			"failed to parse config",
+			"err", err,
+		)
+		return
 	}
 
 	scanner := scanner.NewScanner(queries, config, ctx)
