@@ -1,10 +1,8 @@
 import { ScrollView, Text, TextInput, View } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Stack } from "expo-router";
-import { useEffect, useState } from "react";
 import { useSettings } from "$lib/settings";
 import Fa from "@expo/vector-icons/FontAwesome6";
-import { Band } from "$lib/api";
 import VerticalSlider from "$lib/vertical-slider";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 

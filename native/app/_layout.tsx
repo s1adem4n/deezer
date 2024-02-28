@@ -1,17 +1,15 @@
 import { StatusBar } from "expo-status-bar";
 import playbackService from "$lib/playback-service";
 import TrackPlayer, { Capability } from "react-native-track-player";
-import { useState } from "react";
 import BottomControls from "$lib/audio/bottom-controls";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SystemUI from "expo-system-ui";
-import { Tabs, router } from "expo-router";
+import { Tabs } from "expo-router";
 import { TouchableOpacity, View, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PortalHost, PortalProvider } from "@gorhom/portal";
 import Mc from "@expo/vector-icons/MaterialCommunityIcons";
-import { CommonActions } from "@react-navigation/native";
 import { SettingsProvider } from "$lib/settings";
 import { APIProvider } from "$lib/api/context";
 
