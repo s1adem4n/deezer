@@ -88,7 +88,7 @@ const BottomControls: React.FC = () => {
             </View>
 
             <TouchableOpacity
-              className="ml-auto mr-2"
+              className="ml-auto mr-2 flex items-center justify-center h-9 w-6"
               disabled={
                 playbackState.state === State.Loading ||
                 playbackState.state === State.Buffering
@@ -102,7 +102,7 @@ const BottomControls: React.FC = () => {
               }}
             >
               {playbackState.state === State.Playing ? (
-                <Fa name="pause" size={24} color="rgb(228 228 231)" />
+                <Fa name="pause" size={28} color="rgb(228 228 231)" />
               ) : playbackState.state === State.Loading ||
                 playbackState.state === State.Buffering ? (
                 <ActivityIndicator />

@@ -6,18 +6,23 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { Album, BASE_URL, api } from "$lib/api";
+import { Album } from "$lib/api";
 import { useState } from "react";
 import { Stack, router } from "expo-router";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAPI } from "$lib/api/context";
+import { useSettings } from "$lib/settings";
 
 const windowWidth = Dimensions.get("window").width;
 
 const AlbumPreview = React.memo(
   ({ album, index }: { album: Album; index: number }) => {
+    const { value: api } = useAPI();
+    const { value: settings } = useSettings();
+
     const artists = useQuery({
       queryKey: ["album", album.id, "artists"],
       queryFn: async () => {
@@ -49,7 +54,7 @@ const AlbumPreview = React.memo(
             }}
           >
             <Image
-              source={{ uri: `${BASE_URL}/${album.coverPath}` }}
+              source={{ uri: `${settings.apiURL}/${album.coverPath}` }}
               className="rounded-md"
               style={{
                 borderColor: "rgba(255, 255, 255, 0.2)",
@@ -79,14 +84,22 @@ const AlbumPreview = React.memo(
 );
 
 export default function Page() {
+  const { value: api } = useAPI();
+
   const albums = useQuery({
     queryKey: ["albums"],
     queryFn: async () => {
       setRefreshing(true);
-      return await api.albums.list().then((albums) => {
-        setRefreshing(false);
-        return albums;
-      });
+      return await api.albums
+        .list()
+        .then((albums) => {
+          setRefreshing(false);
+          return albums;
+        })
+        .catch((e) => {
+          setRefreshing(false);
+          throw e;
+        });
     },
   });
   const [refreshing, setRefreshing] = useState(false);

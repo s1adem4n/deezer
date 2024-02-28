@@ -1,5 +1,5 @@
-import { api, Artist, Album, Track as APITrack, BASE_URL } from "$lib/api";
-import { settings } from "$lib/settings";
+import API, { Artist, Album, Track as APITrack } from "$lib/api";
+import { Settings } from "$lib/settings";
 import TrackPlayer, { Track } from "react-native-track-player";
 
 export interface PlayerTrack extends Track {
@@ -12,6 +12,8 @@ export interface PlayerTrack extends Track {
 
 export const playTrack = async (
   track: APITrack,
+  settings: Settings,
+  api: API,
   album?: Album,
   tracks?: APITrack[],
   artists?: Artist[][]
@@ -31,7 +33,7 @@ export const playTrack = async (
       artist: artistsRes[index].map((artist) => artist.name).join(", "),
       album: albumRes.title,
       url: api.tracks.stream(track.id, settings.bitrate, settings.bands),
-      artwork: `${BASE_URL}/${albumRes.coverPath}`,
+      artwork: `${settings.apiURL}/${albumRes.coverPath}`,
       bitrate: track.bitrate,
       artists: artistsRes[index],
       albumData: albumRes,

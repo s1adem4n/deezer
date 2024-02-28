@@ -2,20 +2,34 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 
 import { Dimensions, FlatList, Image, Text, View } from "react-native";
-import { Track as APITrack, api, BASE_URL } from "$lib/api";
+import { Track as APITrack } from "$lib/api";
 import { parseLength } from "$lib/utils";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { playTrack } from "$lib/audio/controls";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSettings } from "$lib/settings";
+import { useAPI } from "$lib/api/context";
 
 const windowWidth = Dimensions.get("window").width;
 
 const Track = React.memo(
-  ({ track, onPlay }: { track: APITrack; onPlay?: () => void }) => {
+  ({
+    track,
+    index,
+    onPlay,
+  }: {
+    track: APITrack;
+    index: number;
+    onPlay?: () => void;
+  }) => {
     return (
-      <View className="flex flex-row justify-between border-b border-zinc-900 p-4">
+      <View
+        className={`flex flex-row justify-between border-b border-zinc-900 p-4 ${
+          index === 0 && "border-t"
+        }`}
+      >
         <View className="flex flex-row gap-4">
           {track.position ? (
             <Text
@@ -68,6 +82,8 @@ function formatDuration(seconds: number) {
 export default function Page() {
   const { id } = useLocalSearchParams();
   const parsedId = typeof id === "string" ? parseInt(id) : 0;
+  const { value: api } = useAPI();
+  const { value: settings } = useSettings();
 
   const album = useQuery({
     queryKey: ["albums", id],
@@ -118,7 +134,7 @@ export default function Page() {
             <View className="rounded-md bg-zinc-800 h-36 w-36">
               {album.data ? (
                 <Image
-                  source={{ uri: `${BASE_URL}/${album.data.coverPath}` }}
+                  source={{ uri: `${settings.apiURL}/${album.data.coverPath}` }}
                   className="rounded-md w-36 h-36"
                   style={{
                     borderColor: "rgba(255, 255, 255, 0.2)",
@@ -159,11 +175,19 @@ export default function Page() {
             </View>
           </View>
         )}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <Track
             track={item}
+            index={index}
             onPlay={async () => {
-              playTrack(item, album.data, tracks.data, trackArtists.data);
+              playTrack(
+                item,
+                settings,
+                api,
+                album.data,
+                tracks.data,
+                trackArtists.data
+              );
             }}
           />
         )}

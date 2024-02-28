@@ -30,10 +30,13 @@ export class API {
     stream: (id: number, bitrate: number, bands?: Band[]) => {
       const query = new URLSearchParams({ bitrate: bitrate.toString() });
       const bandsStrings = bands
-        ?.filter((band) => band.gain !== 0)
-        .map((band) => `${band.frequency}:${band.gain.toFixed(2)}`)
+        ?.map((band) => `${band.frequency}:${band.gain.toFixed(2)}`)
         .join(",");
-      if (bandsStrings) {
+      if (
+        bands &&
+        bands.filter((band) => band.gain !== 0).length > 0 &&
+        bandsStrings
+      ) {
         query.set("equalizer", bandsStrings);
       }
       return `${this.baseUrl}/tracks/${id}/stream?${query.toString()}`;
