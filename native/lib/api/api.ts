@@ -30,7 +30,8 @@ export class API {
     stream: (id: number, bitrate: number, bands?: Band[]) => {
       const query = new URLSearchParams({ bitrate: bitrate.toString() });
       const bandsStrings = bands
-        ?.map((band) => `${band.frequency}:${band.gain.toFixed(2)}`)
+        ?.filter((band) => band.gain !== 0)
+        .map((band) => `${band.frequency}:${band.gain.toFixed(2)}`)
         .join(",");
       if (bandsStrings) {
         query.set("equalizer", bandsStrings);
