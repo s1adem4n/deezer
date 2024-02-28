@@ -1,5 +1,5 @@
 # Verwenden Sie ein offizielles Go-Bild für den Build
-FROM archlinux:latest as builder
+FROM archlinux:base as builder
 
 RUN pacman -Syu --noconfirm
 RUN pacman -S --noconfirm go git taglib gcc pkgconf
@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache \
   go build -o main cmd/main.go
 
 
-FROM archlinux:latest
+FROM archlinux:base
 
 RUN pacman -Syu --noconfirm
 RUN pacman -S --noconfirm taglib
