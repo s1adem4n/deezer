@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var Delimiters = []string{";", ",", "feat.", "ft.", "feat", "ft", "&"}
+var Delimiters = []string{";", ",", "feat.", "ft.", "feat", "ft", "&", " / "}
 
 type ArtistsParser struct {
 	Position int

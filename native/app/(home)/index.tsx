@@ -68,7 +68,7 @@ const AlbumPreview = React.memo(
         </TouchableWithoutFeedback>
 
         <Text
-          className="font-semibold mt-0.5 text-zinc-200"
+          className="font-semibold mt-1 text-zinc-200"
           numberOfLines={1}
           ellipsizeMode="tail"
         >
